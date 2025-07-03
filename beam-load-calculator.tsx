@@ -1669,34 +1669,41 @@ export default function BeamLoadCalculator() {
       yOffset += 5
       try {
         const container = document.getElementById("shear-force-diagram");
-        const svg = container?.querySelector("svg");
-        if (svg) {
-          const diagramWidth = 300
-          const diagramHeight = 180
-          const diagramX = (pageWidth - diagramWidth) / 2
-          pdf.addImage(svg, "SVG", diagramX, yOffset, diagramWidth, diagramHeight)
-          yOffset += diagramHeight + 15
-        }
+        const svg = container?.querySelector("svg") as SVGSVGElement | null;
+        if (!svg) throw new Error("Shear force diagram SVG not found in DOM");
+        const diagramWidth = 250;
+        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
+        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
+        const aspect = origHeight / origWidth;
+        const diagramHeight = Math.round(diagramWidth * aspect);
+        const diagramX = (pageWidth - diagramWidth) / 2;
+        const img = await svgToPngDataUrl(svg, origWidth, origHeight);
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        yOffset += diagramHeight + 15;
       } catch (err) {
-        yOffset = addWrappedText("[Shear Force Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10)
-        yOffset += 10
+        yOffset = addWrappedText("[Shear Force Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10);
+        yOffset += 10;
       }
 
       // Bending Moment Diagram
       yOffset = addSubsectionHeader("5.2 Bending Moment Diagram", margin, yOffset)
       yOffset += 5
       try {
-        const momentImg = await captureSVGAsImage("bending-moment-diagram", 500, 300)
-        if (momentImg) {
-          const diagramWidth = 300
-          const diagramHeight = 180
-          const diagramX = (pageWidth - diagramWidth) / 2
-          pdf.addImage(momentImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-          yOffset += diagramHeight + 15
-        }
+        const container = document.getElementById("bending-moment-diagram");
+        const svg = container?.querySelector("svg") as SVGSVGElement | null;
+        if (!svg) throw new Error("Bending moment diagram SVG not found in DOM");
+        const diagramWidth = 250;
+        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
+        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
+        const aspect = origHeight / origWidth;
+        const diagramHeight = Math.round(diagramWidth * aspect);
+        const diagramX = (pageWidth - diagramWidth) / 2;
+        const img = await svgToPngDataUrl(svg, origWidth, origHeight);
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        yOffset += diagramHeight + 15;
       } catch (err) {
-        yOffset = addWrappedText("[Bending Moment Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10)
-        yOffset += 10
+        yOffset = addWrappedText("[Bending Moment Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10);
+        yOffset += 10;
       }
 
       // Add page numbers to all pages
