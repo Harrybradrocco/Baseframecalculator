@@ -291,7 +291,7 @@ const BeamDiagram: React.FC<BeamDiagramProps> = ({ beamLength, leftSupport, righ
   const rightSupportX = margin + (validRightSupport / validBeamLength) * (svgWidth - 2 * margin)
 
   return (
-    <svg width={svgWidth} height={svgHeight} className="mx-auto" id="structure-diagram">
+    <svg width={svgWidth} height={svgHeight} className="mx-auto" id="beam-structure-diagram">
       {/* Beam */}
       <line x1={margin} y1={beamY} x2={svgWidth - margin} y2={beamY} stroke="black" strokeWidth="4" />
 
@@ -420,7 +420,7 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
   }
 
   return (
-    <svg width={svgWidth} height={svgHeight} className="mx-auto" id="structure-diagram">
+    <svg width={svgWidth} height={svgHeight} className="mx-auto" id="frame-structure-diagram">
       {/* Frame outline */}
       <rect
         x={frameRect.x}
@@ -1596,11 +1596,18 @@ export default function BeamLoadCalculator() {
       yOffset = addSubsectionHeader("4.1 Structure Layout", margin, yOffset)
       yOffset += 5
       // Use html2canvas for structure diagram
-      const structureEl = document.getElementById("structure-diagram")
-      console.log("structure-diagram element:", structureEl)
-      if (!structureEl) throw new Error("Structure diagram not found in DOM")
-      const structureImg = await captureElementAsImage("structure-diagram", 500, analysisType === "Simple Beam" ? 250 : 450)
-      if (!structureImg) throw new Error("Failed to capture structure diagram image")
+      let structureImg: string | null = null
+      if (analysisType === "Simple Beam") {
+        const structureEl = document.getElementById("beam-structure-diagram")
+        if (!structureEl) throw new Error("Beam structure diagram not found in DOM")
+        structureImg = await captureElementAsImage("beam-structure-diagram", 500, 250)
+        if (!structureImg) throw new Error("Failed to capture beam structure diagram image")
+      } else {
+        const structureEl = document.getElementById("frame-structure-diagram")
+        if (!structureEl) throw new Error("Frame structure diagram not found in DOM")
+        structureImg = await captureElementAsImage("frame-structure-diagram", 500, 450)
+        if (!structureImg) throw new Error("Failed to capture frame structure diagram image")
+      }
       if (structureImg) {
         const diagramWidth = 300
         const diagramHeight = analysisType === "Simple Beam" ? 120 : 180
