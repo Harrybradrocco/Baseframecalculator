@@ -2164,6 +2164,18 @@ export default function BeamLoadCalculator() {
           {isGeneratingPDF ? "Generating PDF..." : "Download PDF Report"}
         </Button>
       </div>
+
+      <Button
+        onClick={() => {
+          const el = document.getElementById(
+            analysisType === "Simple Beam" ? "beam-structure-diagram" : "frame-structure-diagram"
+          );
+          alert(el ? "Diagram element FOUND in DOM" : "Diagram element NOT FOUND in DOM");
+        }}
+        variant="outline"
+      >
+        Test Diagram Presence
+      </Button>
     </div>
   )
 }
