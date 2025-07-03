@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
+import html2canvas from "html2canvas"
 
 const standardMaterials = {
   "ASTM A36 Structural Steel": {
@@ -864,6 +865,7 @@ export default function BeamLoadCalculator() {
     maxDeflection: 0,
     totalAppliedLoad: 0,
   })
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
 
   // Reset loads when analysis type changes
   useEffect(() => {
@@ -1256,6 +1258,7 @@ export default function BeamLoadCalculator() {
   }, [calculateResults, calculateDiagrams])
 
   const handleDownloadPDF = async () => {
+    setIsGeneratingPDF(true)
     try {
       const pdf = new jsPDF()
       const pageWidth = pdf.internal.pageSize.getWidth()
@@ -1299,41 +1302,19 @@ export default function BeamLoadCalculator() {
         return y + 6
       }
 
-      // Helper function to convert SVG to high-quality image
-      const addSVGToPDF = async (svgElement: SVGElement, x: number, y: number, width: number, height: number) => {
-        const canvas = document.createElement("canvas")
-        const ctx = canvas.getContext("2d")
-        const img = new Image()
-
-        // High resolution for crisp diagrams
-        const scale = 4
-        canvas.width = width * scale
-        canvas.height = height * scale
-
-        // Set white background
-        if (ctx) {
-          ctx.fillStyle = "white"
-          ctx.fillRect(0, 0, canvas.width, canvas.height)
-          ctx.scale(scale, scale)
-        }
-
-        const svgData = new XMLSerializer().serializeToString(svgElement)
-        const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
-        const url = URL.createObjectURL(svgBlob)
-
-        return new Promise<void>((resolve) => {
-          img.onload = () => {
-            if (ctx) {
-              ctx.drawImage(img, 0, 0, width, height)
-              const imgData = canvas.toDataURL("image/png", 1.0)
-              pdf.addImage(imgData, "PNG", x, y, width, height, undefined, "FAST")
-            }
-            URL.revokeObjectURL(url)
-            resolve()
-          }
-          img.crossOrigin = "anonymous"
-          img.src = url
-        })
+      // Helper to capture a DOM node as PNG using html2canvas
+      const captureElementAsImage = async (elementId: string, width: number, height: number) => {
+        const element = document.getElementById(elementId)
+        if (!element) return null
+        // Optionally, set element size for consistent screenshots
+        const prevWidth = element.style.width
+        const prevHeight = element.style.height
+        element.style.width = `${width}px`
+        element.style.height = `${height}px`
+        const canvas = await html2canvas(element, { backgroundColor: "#fff", scale: 2 })
+        element.style.width = prevWidth
+        element.style.height = prevHeight
+        return canvas.toDataURL("image/png", 1.0)
       }
 
       // Title Page
@@ -1541,7 +1522,6 @@ export default function BeamLoadCalculator() {
         )
       }
 
-      // Check if we need a new page
       if (yOffset > pageHeight - 60) {
         pdf.addPage()
         yOffset = 30
@@ -1609,21 +1589,19 @@ export default function BeamLoadCalculator() {
       // 4. STRUCTURAL DIAGRAMS
       pdf.addPage()
       yOffset = 30
-
       yOffset = addSectionHeader("4. STRUCTURAL DIAGRAMS", margin, yOffset)
       yOffset += 10
 
       // Structure Diagram
       yOffset = addSubsectionHeader("4.1 Structure Layout", margin, yOffset)
       yOffset += 5
-
-      const structureDiagram = document.getElementById("structure-diagram")?.querySelector("svg")
-      if (structureDiagram) {
+      // Use html2canvas for structure diagram
+      const structureImg = await captureElementAsImage("structure-diagram", 500, analysisType === "Simple Beam" ? 250 : 450)
+      if (structureImg) {
         const diagramWidth = 300
         const diagramHeight = analysisType === "Simple Beam" ? 120 : 180
         const diagramX = (pageWidth - diagramWidth) / 2
-
-        await addSVGToPDF(structureDiagram, diagramX, yOffset, diagramWidth, diagramHeight)
+        pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
         yOffset += diagramHeight + 15
       }
 
@@ -1631,14 +1609,12 @@ export default function BeamLoadCalculator() {
       if (analysisType === "Base Frame") {
         yOffset = addSubsectionHeader("4.2 Corner Loads Analysis", margin, yOffset)
         yOffset += 5
-
-        const cornerDiagram = document.getElementById("corner-loads-diagram")?.querySelector("svg")
-        if (cornerDiagram) {
+        const cornerImg = await captureElementAsImage("corner-loads-diagram", 500, 450)
+        if (cornerImg) {
           const diagramWidth = 300
           const diagramHeight = 180
           const diagramX = (pageWidth - diagramWidth) / 2
-
-          await addSVGToPDF(cornerDiagram, diagramX, yOffset, diagramWidth, diagramHeight)
+          pdf.addImage(cornerImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
           yOffset += diagramHeight + 15
         }
       }
@@ -1646,42 +1622,47 @@ export default function BeamLoadCalculator() {
       // 5. FORCE DIAGRAMS
       pdf.addPage()
       yOffset = 30
-
       yOffset = addSectionHeader("5. FORCE DIAGRAMS", margin, yOffset)
       yOffset += 10
 
       // Shear Force Diagram
       yOffset = addSubsectionHeader("5.1 Shear Force Diagram", margin, yOffset)
       yOffset += 5
-
-      const shearDiagram = document.getElementById("shear-force-diagram")?.querySelector("svg")
-      if (shearDiagram) {
+      const shearImg = await captureElementAsImage("shear-force-diagram", 500, 300)
+      if (shearImg) {
         const diagramWidth = 300
         const diagramHeight = 180
         const diagramX = (pageWidth - diagramWidth) / 2
-
-        await addSVGToPDF(shearDiagram, diagramX, yOffset, diagramWidth, diagramHeight)
+        pdf.addImage(shearImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
         yOffset += diagramHeight + 15
       }
 
       // Bending Moment Diagram
       yOffset = addSubsectionHeader("5.2 Bending Moment Diagram", margin, yOffset)
       yOffset += 5
-
-      const momentDiagram = document.getElementById("bending-moment-diagram")?.querySelector("svg")
-      if (momentDiagram) {
+      const momentImg = await captureElementAsImage("bending-moment-diagram", 500, 300)
+      if (momentImg) {
         const diagramWidth = 300
         const diagramHeight = 180
         const diagramX = (pageWidth - diagramWidth) / 2
-
-        await addSVGToPDF(momentDiagram, diagramX, yOffset, diagramWidth, diagramHeight)
+        pdf.addImage(momentImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
         yOffset += diagramHeight + 15
       }
 
+      // Add page numbers to all pages
+      const pageCount = pdf.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i)
+        pdf.setFontSize(8)
+        pdf.setFont("helvetica", "italic")
+        pdf.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: "center" })
+      }
+
       // Footer on last page
+      pdf.setPage(pageCount)
       pdf.setFontSize(8)
       pdf.setFont("helvetica", "italic")
-      pdf.text("Generated by Enhanced Beam Load Calculator", pageWidth / 2, pageHeight - 10, { align: "center" })
+      pdf.text("Generated by Enhanced Beam Load Calculator", pageWidth / 2, pageHeight - 15, { align: "center" })
 
       // Save the PDF
       const fileName = `${analysisType.toLowerCase().replace(" ", "_")}_analysis_report_${new Date().toISOString().split("T")[0]}.pdf`
@@ -1689,6 +1670,8 @@ export default function BeamLoadCalculator() {
     } catch (error) {
       console.error("Error generating PDF:", error)
       alert("Error generating PDF report. Please try again.")
+    } finally {
+      setIsGeneratingPDF(false)
     }
   }
   return (
@@ -2162,7 +2145,9 @@ export default function BeamLoadCalculator() {
       </div>
 
       <div className="mt-8">
-        <Button onClick={handleDownloadPDF}>Download PDF Report</Button>
+        <Button onClick={handleDownloadPDF} disabled={isGeneratingPDF}>
+          {isGeneratingPDF ? "Generating PDF..." : "Download PDF Report"}
+        </Button>
       </div>
     </div>
   )
