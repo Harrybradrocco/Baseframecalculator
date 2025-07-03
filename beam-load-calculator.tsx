@@ -869,7 +869,6 @@ export default function BeamLoadCalculator() {
   const [frameWidth, setFrameWidth] = useState(1000)
   const [leftSupport, setLeftSupport] = useState(0)
   const [rightSupport, setRightSupport] = useState(1000)
-  const [cornerConnectionType, setCornerConnectionType] = useState("Welded")
   const [loads, setLoads] = useState<Load[]>([{ type: "Point Load", magnitude: 1000, startPosition: 500 }])
   const [shearForceData, setShearForceData] = useState<Array<{ x: number; y: number }>>([])
   const [bendingMomentData, setBendingMomentData] = useState<Array<{ x: number; y: number }>>([])
@@ -1411,14 +1410,6 @@ export default function BeamLoadCalculator() {
         yOffset = addWrappedText(`• Frame Length: ${frameLength} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
         yOffset = addWrappedText(`• Frame Width: ${frameWidth} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
         yOffset = addWrappedText(
-          `• Corner Connection: ${cornerConnectionType}`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
-        yOffset = addWrappedText(
           `• Total Members: 4 (2 Longitudinal + 2 Transverse)`,
           margin + 10,
           yOffset,
@@ -1768,29 +1759,29 @@ export default function BeamLoadCalculator() {
     }
   }
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-2" style={{ fontFamily: '"Scylla Std Medium", sans-serif' }}>
       <Head>
         <title>Load Calculator</title>
       </Head>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold">Enhanced Load Calculator</h1>
+      <div className="flex justify-between items-center mb-2">
+        <h1 className="text-2xl font-bold">Enhanced Load Calculator</h1>
         <div className="flex items-center gap-2">
           <a href="mailto:hbradroc@uwo.ca" title="Email hbradroc@uwo.ca" className="text-gray-700 hover:text-blue-600 flex items-center">
-            <Mail className="w-5 h-5 mr-1" />
+            <Mail className="w-4 h-4 mr-1" />
             <span className="text-xs font-medium hidden sm:inline">hbradroc@uwo.ca</span>
           </a>
           <HelpDialog />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {/* Configuration Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Calculations - Configuration</CardTitle>
-            <CardDescription>Select analysis type and enter beam properties.</CardDescription>
+        <Card className="p-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Calculations - Configuration</CardTitle>
+            <CardDescription className="text-sm">Select analysis type and enter beam properties.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
+          <CardContent className="grid gap-2 p-2">
             <div className="grid grid-cols-2 gap-2">
               <Label htmlFor="analysis-type">Analysis Type</Label>
               <Select value={analysisType} onValueChange={setAnalysisType}>
@@ -1854,30 +1845,19 @@ export default function BeamLoadCalculator() {
                     onChange={(e) => setFrameWidth(validatePositive(Number(e.target.value), 1000))}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="corner-connection">Corner Connection</Label>
-                  <Select value={cornerConnectionType} onValueChange={setCornerConnectionType}>
-                    <SelectTrigger id="corner-connection">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Welded">Welded</SelectItem>
-                      <SelectItem value="Bolted">Bolted</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+
               </>
             )}
           </CardContent>
         </Card>
 
         {/* Cross-Section Dimensions Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Cross-Section Dimensions</CardTitle>
-            <CardDescription>Enter the dimensions of the beam cross-section.</CardDescription>
+        <Card className="p-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Cross-Section Dimensions</CardTitle>
+            <CardDescription className="text-sm">Enter the dimensions of the beam cross-section.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
+          <CardContent className="grid gap-2 p-2">
             <div className="grid grid-cols-2 gap-2">
               <Label htmlFor="beam-cross-section">Cross Section</Label>
               <Select value={beamCrossSection} onValueChange={setBeamCrossSection}>
@@ -1978,14 +1958,14 @@ export default function BeamLoadCalculator() {
         </Card>
 
         {/* Loads Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Loads</CardTitle>
-            <CardDescription>Add and manage loads applied to the beam.</CardDescription>
+        <Card className="p-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Loads</CardTitle>
+            <CardDescription className="text-sm">Add and manage loads applied to the beam.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
+          <CardContent className="grid gap-2 p-2">
             {loads.map((load, index) => (
-              <div key={index} className="border p-4 rounded-md">
+              <div key={index} className="border p-2 rounded-md">
                 <div className="grid grid-cols-2 gap-2">
                   <Label htmlFor={`load-type-${index}`}>Load Type</Label>
                   <Select
@@ -2065,12 +2045,12 @@ export default function BeamLoadCalculator() {
         </Card>
 
         {/* Material Properties Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Material Properties</CardTitle>
-            <CardDescription>Select material and view its properties.</CardDescription>
+        <Card className="p-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Material Properties</CardTitle>
+            <CardDescription className="text-sm">Select material and view its properties.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
+          <CardContent className="grid gap-2 p-2">
             <div className="grid grid-cols-2 gap-2">
               <Label htmlFor="material">Material</Label>
               <Select value={material} onValueChange={setMaterial}>
@@ -2146,12 +2126,12 @@ export default function BeamLoadCalculator() {
         </Card>
 
         {/* Results Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Results</CardTitle>
-            <CardDescription>View the calculated results.</CardDescription>
+        <Card className="p-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Results</CardTitle>
+            <CardDescription className="text-sm">View the calculated results.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-2">
             <table className="w-full text-sm border-separate border-spacing-y-1">
               <tbody>
                 <tr><td className="font-medium pr-4">Max Shear Force (N)</td><td>{results.maxShearForce}</td></tr>
@@ -2168,12 +2148,12 @@ export default function BeamLoadCalculator() {
       </div>
 
       {/* Diagrams Section */}
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">Diagrams</h2>
+      <div className="mt-4">
+        <h2 className="text-xl font-semibold mb-2">Diagrams</h2>
 
         {/* Structure Diagram */}
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold mb-2">Structure Diagram</h3>
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold mb-1">Structure Diagram</h3>
           {analysisType === "Simple Beam" ? (
             <BeamDiagram beamLength={beamLength} leftSupport={leftSupport} rightSupport={rightSupport} loads={loads} />
           ) : (
@@ -2183,8 +2163,8 @@ export default function BeamLoadCalculator() {
 
         {/* Corner Loads Diagram (for Base Frame only) */}
         {analysisType === "Base Frame" && (
-          <div className="mb-4">
-            <h3 className="text-xl font-semibold mb-2">Corner Loads Diagram</h3>
+          <div className="mb-2">
+            <h3 className="text-lg font-semibold mb-1">Corner Loads Diagram</h3>
             <CornerLoadsDiagram
               frameLength={frameLength}
               frameWidth={frameWidth}
@@ -2195,8 +2175,8 @@ export default function BeamLoadCalculator() {
         )}
 
         {/* Shear Force Diagram */}
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold mb-2">Shear Force Diagram</h3>
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold mb-1">Shear Force Diagram</h3>
           <div id="shear-force-diagram" style={{ width: "100%", height: 300 }}>
             <ResponsiveContainer>
               <AreaChart data={shearForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -2212,8 +2192,8 @@ export default function BeamLoadCalculator() {
         </div>
 
         {/* Bending Moment Diagram */}
-        <div className="mb-4">
-          <h3 className="text-xl font-semibold mb-2">Bending Moment Diagram</h3>
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold mb-1">Bending Moment Diagram</h3>
           <div id="bending-moment-diagram" style={{ width: "100%", height: 300 }}>
             <ResponsiveContainer>
               <AreaChart data={bendingMomentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -2229,7 +2209,7 @@ export default function BeamLoadCalculator() {
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-4">
         <Button onClick={handleDownloadPDF} disabled={isGeneratingPDF}>
           {isGeneratingPDF ? "Generating PDF..." : "Download PDF Report"}
         </Button>
