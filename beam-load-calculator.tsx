@@ -1374,6 +1374,9 @@ export default function BeamLoadCalculator() {
       pdf.setLineWidth(0.5)
       pdf.line(margin, 95, pageWidth - margin, 95)
 
+      // Declare yOffset at the top before any use
+      let yOffset = 0;
+
       // Add Table of Contents page
       pdf.addPage()
       yOffset = 30
@@ -1416,7 +1419,8 @@ export default function BeamLoadCalculator() {
       pdf.setLineWidth(0.5)
       pdf.line(margin, yOffset, pageWidth - margin, yOffset)
 
-      let yOffset = 110
+      // Now set yOffset for the next section
+      yOffset = 110
 
       // 1. CONFIGURATION SECTION
       yOffset = addSectionHeader("1. CONFIGURATION", margin, yOffset)
