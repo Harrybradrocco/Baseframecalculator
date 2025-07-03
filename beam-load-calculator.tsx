@@ -1694,7 +1694,7 @@ export default function BeamLoadCalculator() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold">Enhanced Beam Load Calculator</h1>
+        <h1 className="text-3xl font-bold">Enhanced Load Calculator</h1>
         <HelpDialog />
       </div>
 
@@ -1702,7 +1702,7 @@ export default function BeamLoadCalculator() {
         {/* Configuration Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Configuration</CardTitle>
+            <CardTitle>Calculations - Configuration</CardTitle>
             <CardDescription>Select analysis type and enter beam properties.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
