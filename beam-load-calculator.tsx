@@ -1305,7 +1305,11 @@ export default function BeamLoadCalculator() {
       // Helper to capture a DOM node as PNG using html2canvas
       const captureElementAsImage = async (elementId: string, width: number, height: number) => {
         const element = document.getElementById(elementId)
-        if (!element) return null
+        if (!element) throw new Error(`Element with id '${elementId}' not found in DOM. Make sure the diagram is visible on the page before downloading the PDF.`)
+        // Scroll into view to ensure visibility
+        element.scrollIntoView({ behavior: "auto", block: "center" })
+        // Wait for rendering (React may need a moment)
+        await new Promise(res => setTimeout(res, 350))
         // Optionally, set element size for consistent screenshots
         const prevWidth = element.style.width
         const prevHeight = element.style.height
