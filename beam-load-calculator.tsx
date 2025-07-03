@@ -1596,7 +1596,11 @@ export default function BeamLoadCalculator() {
       yOffset = addSubsectionHeader("4.1 Structure Layout", margin, yOffset)
       yOffset += 5
       // Use html2canvas for structure diagram
+      const structureEl = document.getElementById("structure-diagram")
+      console.log("structure-diagram element:", structureEl)
+      if (!structureEl) throw new Error("Structure diagram not found in DOM")
       const structureImg = await captureElementAsImage("structure-diagram", 500, analysisType === "Simple Beam" ? 250 : 450)
+      if (!structureImg) throw new Error("Failed to capture structure diagram image")
       if (structureImg) {
         const diagramWidth = 300
         const diagramHeight = analysisType === "Simple Beam" ? 120 : 180
@@ -1669,7 +1673,7 @@ export default function BeamLoadCalculator() {
       pdf.save(fileName)
     } catch (error) {
       console.error("Error generating PDF:", error)
-      alert("Error generating PDF report. Please try again.")
+      alert("Error generating PDF report. Please try again.\\n" + error)
     } finally {
       setIsGeneratingPDF(false)
     }
