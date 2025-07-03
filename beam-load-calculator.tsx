@@ -828,6 +828,30 @@ const BeamCrossSectionImage: React.FC<{ type: string }> = ({ type }) => {
   }
 }
 
+function svgToPngDataUrl(svgElement, width, height) {
+  return new Promise((resolve, reject) => {
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svgElement);
+    const blob = new Blob([svgString], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+
+    const img = new window.Image();
+    img.onload = function () {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 export default function BeamLoadCalculator() {
   const [analysisType, setAnalysisType] = useState("Simple Beam")
   const [beamType, setBeamType] = useState("Simple Beam")
