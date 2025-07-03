@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
+import Head from "next/head"
+import { Mail } from "lucide-react"
 
 const standardMaterials = {
   "ASTM A36 Structural Steel": {
@@ -1756,9 +1758,18 @@ export default function BeamLoadCalculator() {
   }
   return (
     <div className="container mx-auto p-4">
+      <Head>
+        <title>Load Calculator</title>
+      </Head>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold">Enhanced Load Calculator</h1>
-        <HelpDialog />
+        <div className="flex items-center gap-2">
+          <a href="mailto:hbradroc@uwo.ca" title="Email hbradroc@uwo.ca" className="text-gray-700 hover:text-blue-600 flex items-center">
+            <Mail className="w-5 h-5 mr-1" />
+            <span className="text-xs font-medium hidden sm:inline">hbradroc@uwo.ca</span>
+          </a>
+          <HelpDialog />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2129,35 +2140,18 @@ export default function BeamLoadCalculator() {
             <CardTitle>Results</CardTitle>
             <CardDescription>View the calculated results.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-4">
-            <div className="grid grid-cols-2 gap-2">
-              <Label>Max Shear Force (N)</Label>
-              <Input type="text" value={results.maxShearForce} readOnly />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label>Max Bending Moment (N·m)</Label>
-              <Input type="text" value={results.maxBendingMoment} readOnly />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label>Max Normal Stress (MPa)</Label>
-              <Input type="text" value={results.maxNormalStress} readOnly />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label>Max Shear Stress (MPa)</Label>
-              <Input type="text" value={results.maxShearStress} readOnly />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label>Safety Factor</Label>
-              <Input type="text" value={results.safetyFactor} readOnly />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label>Max Deflection (mm)</Label>
-              <Input type="text" value={(results.maxDeflection * 1000).toFixed(3)} readOnly />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Label>Structure Weight (N)</Label>
-              <Input type="text" value={frameWeight} readOnly />
-            </div>
+          <CardContent>
+            <table className="w-full text-sm border-separate border-spacing-y-1">
+              <tbody>
+                <tr><td className="font-medium pr-4">Max Shear Force (N)</td><td>{results.maxShearForce}</td></tr>
+                <tr><td className="font-medium pr-4">Max Bending Moment (N·m)</td><td>{results.maxBendingMoment}</td></tr>
+                <tr><td className="font-medium pr-4">Max Normal Stress (MPa)</td><td>{results.maxNormalStress}</td></tr>
+                <tr><td className="font-medium pr-4">Max Shear Stress (MPa)</td><td>{results.maxShearStress}</td></tr>
+                <tr><td className="font-medium pr-4">Safety Factor</td><td>{results.safetyFactor}</td></tr>
+                <tr><td className="font-medium pr-4">Max Deflection (mm)</td><td>{(results.maxDeflection * 1000).toFixed(3)}</td></tr>
+                <tr><td className="font-medium pr-4">Structure Weight (N)</td><td>{frameWeight}</td></tr>
+              </tbody>
+            </table>
           </CardContent>
         </Card>
       </div>
