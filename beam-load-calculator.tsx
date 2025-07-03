@@ -1306,7 +1306,7 @@ export default function BeamLoadCalculator() {
         const img = new Image()
 
         // High resolution for crisp diagrams
-        const scale = 3
+        const scale = 4
         canvas.width = width * scale
         canvas.height = height * scale
 
@@ -1619,8 +1619,8 @@ export default function BeamLoadCalculator() {
 
       const structureDiagram = document.getElementById("structure-diagram")?.querySelector("svg")
       if (structureDiagram) {
-        const diagramWidth = 160
-        const diagramHeight = analysisType === "Simple Beam" ? 80 : 120
+        const diagramWidth = 300
+        const diagramHeight = analysisType === "Simple Beam" ? 120 : 180
         const diagramX = (pageWidth - diagramWidth) / 2
 
         await addSVGToPDF(structureDiagram, diagramX, yOffset, diagramWidth, diagramHeight)
@@ -1634,8 +1634,8 @@ export default function BeamLoadCalculator() {
 
         const cornerDiagram = document.getElementById("corner-loads-diagram")?.querySelector("svg")
         if (cornerDiagram) {
-          const diagramWidth = 160
-          const diagramHeight = 120
+          const diagramWidth = 300
+          const diagramHeight = 180
           const diagramX = (pageWidth - diagramWidth) / 2
 
           await addSVGToPDF(cornerDiagram, diagramX, yOffset, diagramWidth, diagramHeight)
@@ -1656,8 +1656,8 @@ export default function BeamLoadCalculator() {
 
       const shearDiagram = document.getElementById("shear-force-diagram")?.querySelector("svg")
       if (shearDiagram) {
-        const diagramWidth = 160
-        const diagramHeight = 100
+        const diagramWidth = 300
+        const diagramHeight = 180
         const diagramX = (pageWidth - diagramWidth) / 2
 
         await addSVGToPDF(shearDiagram, diagramX, yOffset, diagramWidth, diagramHeight)
@@ -1670,8 +1670,8 @@ export default function BeamLoadCalculator() {
 
       const momentDiagram = document.getElementById("bending-moment-diagram")?.querySelector("svg")
       if (momentDiagram) {
-        const diagramWidth = 160
-        const diagramHeight = 100
+        const diagramWidth = 300
+        const diagramHeight = 180
         const diagramX = (pageWidth - diagramWidth) / 2
 
         await addSVGToPDF(momentDiagram, diagramX, yOffset, diagramWidth, diagramHeight)
