@@ -1298,7 +1298,8 @@ export default function BeamLoadCalculator() {
       const contentWidth = pageWidth - 2 * margin
 
       // Set default font
-      pdf.setFont("helvetica")
+      pdf.setFont("helvetica") // Note: jsPDF doesn't support custom fonts like "Chesna Grotesk" directly
+      // For custom fonts, you would need to load them into jsPDF, but for now we'll use helvetica
 
       // Helper function to add wrapped text with better formatting
       const addWrappedText = (
@@ -1347,7 +1348,7 @@ export default function BeamLoadCalculator() {
       // Title Page
       pdf.setFontSize(24)
       pdf.setFont("helvetica", "bold")
-      pdf.text(`${analysisType} Analysis Report`, pageWidth / 2, 40, { align: "center" })
+      pdf.text("Load Analysis Report", pageWidth / 2, 40, { align: "center" })
 
       // Subtitle
       pdf.setFontSize(16)
@@ -1366,13 +1367,14 @@ export default function BeamLoadCalculator() {
         hour: "2-digit",
         minute: "2-digit",
       })
-      pdf.text(`Generated on: ${dateStr} at ${timeStr}`, pageWidth / 2, 70, { align: "center" })
+      pdf.text(`Date: ${dateStr}`, pageWidth / 2, 70, { align: "center" })
+      pdf.text(`Prepared by: hbradroc@uwo.ca`, pageWidth / 2, 80, { align: "center" })
 
       // Add a line separator
       pdf.setLineWidth(0.5)
-      pdf.line(margin, 85, pageWidth - margin, 85)
+      pdf.line(margin, 95, pageWidth - margin, 95)
 
-      let yOffset = 100
+      let yOffset = 110
 
       // 1. CONFIGURATION SECTION
       yOffset = addSectionHeader("1. CONFIGURATION", margin, yOffset)
@@ -1759,7 +1761,7 @@ export default function BeamLoadCalculator() {
     }
   }
   return (
-    <div className="container mx-auto p-2" style={{ fontFamily: '"Scylla Std Medium", sans-serif' }}>
+    <div className="container mx-auto p-2" style={{ fontFamily: '"Chesna Grotesk", sans-serif' }}>
       <Head>
         <title>Load Calculator</title>
       </Head>
@@ -1770,6 +1772,9 @@ export default function BeamLoadCalculator() {
             <Mail className="w-4 h-4 mr-1" />
             <span className="text-xs font-medium hidden sm:inline">hbradroc@uwo.ca</span>
           </a>
+          <Button onClick={handleDownloadPDF} disabled={isGeneratingPDF} size="sm">
+            {isGeneratingPDF ? "Generating PDF..." : "Download PDF Report"}
+          </Button>
           <HelpDialog />
         </div>
       </div>
@@ -2209,23 +2214,7 @@ export default function BeamLoadCalculator() {
         </div>
       </div>
 
-      <div className="mt-4">
-        <Button onClick={handleDownloadPDF} disabled={isGeneratingPDF}>
-          {isGeneratingPDF ? "Generating PDF..." : "Download PDF Report"}
-        </Button>
-      </div>
 
-      <Button
-        onClick={() => {
-          const el = document.getElementById(
-            analysisType === "Simple Beam" ? "beam-structure-diagram" : "frame-structure-diagram"
-          );
-          alert(el ? "Diagram element FOUND in DOM" : "Diagram element NOT FOUND in DOM");
-        }}
-        variant="outline"
-      >
-        Test Diagram Presence
-      </Button>
     </div>
   )
 }
