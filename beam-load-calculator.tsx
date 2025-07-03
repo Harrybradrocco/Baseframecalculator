@@ -827,6 +827,37 @@ const BeamCrossSectionImage: React.FC<{ type: string }> = ({ type }) => {
   }
 }
 
+// Helper: Convert SVG element to PNG data URL
+async function svgToPngDataUrl(svg: SVGSVGElement, width: number, height: number): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svg);
+    // Add XML declaration for compatibility
+    if (!svgString.startsWith('<?xml')) {
+      svgString = '<?xml version="1.0" standalone="no"?>\r\n' + svgString;
+    }
+    const svg64 = btoa(unescape(encodeURIComponent(svgString)));
+    const image64 = 'data:image/svg+xml;base64,' + svg64;
+    const img = new window.Image();
+    img.onload = function () {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('Canvas context not available'));
+      // White background for PDF
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = function (e) {
+      reject(new Error('Failed to load SVG as image'));
+    };
+    img.src = image64;
+  });
+}
+
 export default function BeamLoadCalculator() {
   const [analysisType, setAnalysisType] = useState("Simple Beam")
   const [beamType, setBeamType] = useState("Simple Beam")
