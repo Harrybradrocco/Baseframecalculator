@@ -1302,17 +1302,14 @@ export default function BeamLoadCalculator() {
       }
 
       // Helper to capture a DOM node as PNG using svgToPngDataUrl
-      const captureSVGAsImage = async (containerId: string, fallbackWidth: number, fallbackHeight: number) => {
-        const container = document.getElementById(containerId)
-        if (!container) throw new Error(`Container with id '${containerId}' not found in DOM.`)
-        const svg = container.querySelector("svg")
-        if (!svg) throw new Error(`SVG not found inside container '${containerId}'. Make sure the chart is visible on the page before downloading the PDF.`)
-        // Use SVG's width/height attributes if present, else fallback
-        let width = fallbackWidth
-        let height = fallbackHeight
-        if (svg.hasAttribute("width")) width = Number(svg.getAttribute("width")) || fallbackWidth
-        if (svg.hasAttribute("height")) height = Number(svg.getAttribute("height")) || fallbackHeight
-        return await svgToPngDataUrl(svg, width, height)
+      const captureSVGAsImage = async (svgId: string, fallbackWidth: number, fallbackHeight: number) => {
+        const svg = document.getElementById(svgId) as SVGSVGElement | null;
+        if (!svg) throw new Error(`SVG with id '${svgId}' not found in DOM. Make sure the chart is visible on the page before downloading the PDF.`);
+        let width = fallbackWidth;
+        let height = fallbackHeight;
+        if (svg.hasAttribute("width")) width = Number(svg.getAttribute("width")) || fallbackWidth;
+        if (svg.hasAttribute("height")) height = Number(svg.getAttribute("height")) || fallbackHeight;
+        return await svgToPngDataUrl(svg, width, height);
       }
 
       // Title Page
