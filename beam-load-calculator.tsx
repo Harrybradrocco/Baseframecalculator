@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
-import html2canvas from "html2canvas"
 
 const standardMaterials = {
   "ASTM A36 Structural Steel": {
@@ -828,30 +827,6 @@ const BeamCrossSectionImage: React.FC<{ type: string }> = ({ type }) => {
   }
 }
 
-function svgToPngDataUrl(svgElement, width, height) {
-  return new Promise((resolve, reject) => {
-    const serializer = new XMLSerializer();
-    const svgString = serializer.serializeToString(svgElement);
-    const blob = new Blob([svgString], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-
-    const img = new window.Image();
-    img.onload = function () {
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-      URL.revokeObjectURL(url);
-      resolve(canvas.toDataURL("image/png"));
-    };
-    img.onerror = reject;
-    img.src = url;
-  });
-}
-
 export default function BeamLoadCalculator() {
   const [analysisType, setAnalysisType] = useState("Simple Beam")
   const [beamType, setBeamType] = useState("Simple Beam")
@@ -1326,23 +1301,18 @@ export default function BeamLoadCalculator() {
         return y + 6
       }
 
-      // Helper to capture a DOM node as PNG using html2canvas
-      const captureElementAsImage = async (elementId: string, width: number, height: number) => {
-        const element = document.getElementById(elementId)
-        if (!element) throw new Error(`Element with id '${elementId}' not found in DOM. Make sure the diagram is visible on the page before downloading the PDF.`)
-        // Scroll into view to ensure visibility
-        element.scrollIntoView({ behavior: "auto", block: "center" })
-        // Wait for rendering (React may need a moment)
-        await new Promise(res => setTimeout(res, 350))
-        // Optionally, set element size for consistent screenshots
-        const prevWidth = element.style.width
-        const prevHeight = element.style.height
-        element.style.width = `${width}px`
-        element.style.height = `${height}px`
-        const canvas = await html2canvas(element, { backgroundColor: "#fff", scale: 2 })
-        element.style.width = prevWidth
-        element.style.height = prevHeight
-        return canvas.toDataURL("image/png", 1.0)
+      // Helper to capture a DOM node as PNG using svgToPngDataUrl
+      const captureSVGAsImage = async (containerId: string, fallbackWidth: number, fallbackHeight: number) => {
+        const container = document.getElementById(containerId)
+        if (!container) throw new Error(`Container with id '${containerId}' not found in DOM.`)
+        const svg = container.querySelector("svg")
+        if (!svg) throw new Error(`SVG not found inside container '${containerId}'. Make sure the chart is visible on the page before downloading the PDF.`)
+        // Use SVG's width/height attributes if present, else fallback
+        let width = fallbackWidth
+        let height = fallbackHeight
+        if (svg.hasAttribute("width")) width = Number(svg.getAttribute("width")) || fallbackWidth
+        if (svg.hasAttribute("height")) height = Number(svg.getAttribute("height")) || fallbackHeight
+        return await svgToPngDataUrl(svg, width, height)
       }
 
       // Title Page
@@ -1623,17 +1593,16 @@ export default function BeamLoadCalculator() {
       // Structure Diagram
       yOffset = addSubsectionHeader("4.1 Structure Layout", margin, yOffset)
       yOffset += 5
-      // Use html2canvas for structure diagram
       let structureImg: string | null = null
       if (analysisType === "Simple Beam") {
-        const structureEl = document.getElementById("beam-structure-diagram")
-        if (!structureEl) throw new Error("Beam structure diagram not found in DOM")
-        structureImg = await captureElementAsImage("beam-structure-diagram", 500, 250)
+        const svg = document.getElementById("beam-structure-diagram") as SVGSVGElement | null
+        if (!svg) throw new Error("Beam structure diagram SVG not found in DOM")
+        structureImg = await captureSVGAsImage("beam-structure-diagram", 500, 250)
         if (!structureImg) throw new Error("Failed to capture beam structure diagram image")
       } else {
-        const structureEl = document.getElementById("frame-structure-diagram")
-        if (!structureEl) throw new Error("Frame structure diagram not found in DOM")
-        structureImg = await captureElementAsImage("frame-structure-diagram", 500, 450)
+        const svg = document.getElementById("frame-structure-diagram") as SVGSVGElement | null
+        if (!svg) throw new Error("Frame structure diagram SVG not found in DOM")
+        structureImg = await captureSVGAsImage("frame-structure-diagram", 500, 450)
         if (!structureImg) throw new Error("Failed to capture frame structure diagram image")
       }
       if (structureImg) {
@@ -1648,13 +1617,16 @@ export default function BeamLoadCalculator() {
       if (analysisType === "Base Frame") {
         yOffset = addSubsectionHeader("4.2 Corner Loads Analysis", margin, yOffset)
         yOffset += 5
-        const cornerImg = await captureElementAsImage("corner-loads-diagram", 500, 450)
-        if (cornerImg) {
-          const diagramWidth = 300
-          const diagramHeight = 180
-          const diagramX = (pageWidth - diagramWidth) / 2
-          pdf.addImage(cornerImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-          yOffset += diagramHeight + 15
+        const svg = document.getElementById("corner-loads-diagram") as SVGSVGElement | null
+        if (svg) {
+          const cornerImg = await captureSVGAsImage("corner-loads-diagram", 500, 450)
+          if (cornerImg) {
+            const diagramWidth = 300
+            const diagramHeight = 180
+            const diagramX = (pageWidth - diagramWidth) / 2
+            pdf.addImage(cornerImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
+            yOffset += diagramHeight + 15
+          }
         }
       }
 
@@ -1667,25 +1639,36 @@ export default function BeamLoadCalculator() {
       // Shear Force Diagram
       yOffset = addSubsectionHeader("5.1 Shear Force Diagram", margin, yOffset)
       yOffset += 5
-      const shearImg = await captureElementAsImage("shear-force-diagram", 500, 300)
-      if (shearImg) {
-        const diagramWidth = 300
-        const diagramHeight = 180
-        const diagramX = (pageWidth - diagramWidth) / 2
-        pdf.addImage(shearImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-        yOffset += diagramHeight + 15
+      try {
+        const container = document.getElementById("shear-force-diagram");
+        const svg = container?.querySelector("svg");
+        if (svg) {
+          const diagramWidth = 300
+          const diagramHeight = 180
+          const diagramX = (pageWidth - diagramWidth) / 2
+          pdf.addImage(svg, "SVG", diagramX, yOffset, diagramWidth, diagramHeight)
+          yOffset += diagramHeight + 15
+        }
+      } catch (err) {
+        yOffset = addWrappedText("[Shear Force Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10)
+        yOffset += 10
       }
 
       // Bending Moment Diagram
       yOffset = addSubsectionHeader("5.2 Bending Moment Diagram", margin, yOffset)
       yOffset += 5
-      const momentImg = await captureElementAsImage("bending-moment-diagram", 500, 300)
-      if (momentImg) {
-        const diagramWidth = 300
-        const diagramHeight = 180
-        const diagramX = (pageWidth - diagramWidth) / 2
-        pdf.addImage(momentImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-        yOffset += diagramHeight + 15
+      try {
+        const momentImg = await captureSVGAsImage("bending-moment-diagram", 500, 300)
+        if (momentImg) {
+          const diagramWidth = 300
+          const diagramHeight = 180
+          const diagramX = (pageWidth - diagramWidth) / 2
+          pdf.addImage(momentImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
+          yOffset += diagramHeight + 15
+        }
+      } catch (err) {
+        yOffset = addWrappedText("[Bending Moment Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10)
+        yOffset += 10
       }
 
       // Add page numbers to all pages
@@ -1708,7 +1691,7 @@ export default function BeamLoadCalculator() {
       pdf.save(fileName)
     } catch (error) {
       console.error("Error generating PDF:", error)
-      alert("Error generating PDF report. Please try again.\\n" + error)
+      alert("Error generating PDF report. Please try again.\n" + error)
     } finally {
       setIsGeneratingPDF(false)
     }
