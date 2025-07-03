@@ -1419,8 +1419,9 @@ export default function BeamLoadCalculator() {
       pdf.setLineWidth(0.5)
       pdf.line(margin, yOffset, pageWidth - margin, yOffset)
 
-      // Now set yOffset for the next section
-      yOffset = 110
+      // Add a new page for the first section
+      pdf.addPage()
+      yOffset = 30
 
       // 1. CONFIGURATION SECTION
       yOffset = addSectionHeader("1. CONFIGURATION", margin, yOffset)
