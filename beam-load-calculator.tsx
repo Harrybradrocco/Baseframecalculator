@@ -1659,17 +1659,28 @@ export default function BeamLoadCalculator() {
 
       // Corner Loads Diagram (for Base Frame only)
       if (analysisType === "Base Frame") {
+        // Estimate required height for header + diagram + padding
+        const diagramHeaderHeight = 10;
+        const diagramPadding = 15;
+        const diagramWidth = 200;
+        const svg = document.getElementById("corner-loads-diagram") as SVGSVGElement | null;
+        let origWidth = 500, origHeight = 450, aspect = origHeight / origWidth;
+        if (svg) {
+          origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 500;
+          origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 450;
+          aspect = origHeight / origWidth;
+        }
+        const diagramHeight = Math.round(diagramWidth * aspect);
+        const requiredHeight = diagramHeaderHeight + diagramHeight + diagramPadding + 10;
+        if (yOffset + requiredHeight > pageHeight - margin) {
+          pdf.addPage();
+          yOffset = 30;
+        }
         yOffset = addSubsectionHeader("4.2 Corner Loads Analysis", margin, yOffset)
         yOffset += 15
-        const svg = document.getElementById("corner-loads-diagram") as SVGSVGElement | null
         if (svg) {
-          const cornerImg = await captureSVGAsImage("corner-loads-diagram", 500, 450)
+          const cornerImg = await captureSVGAsImage("corner-loads-diagram", origWidth, origHeight)
           if (cornerImg) {
-            const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 500;
-            const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 450;
-            const aspect = origHeight / origWidth;
-            const diagramWidth = 200;
-            const diagramHeight = Math.round(diagramWidth * aspect);
             const diagramX = (pageWidth - diagramWidth) / 2;
             pdf.setFillColor(240, 240, 240);
             pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
