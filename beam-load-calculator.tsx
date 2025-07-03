@@ -1620,40 +1620,59 @@ export default function BeamLoadCalculator() {
 
       // Structure Diagram
       yOffset = addSubsectionHeader("4.1 Structure Layout", margin, yOffset)
-      yOffset += 5
+      yOffset += 15
       let structureImg: string | null = null
       if (analysisType === "Simple Beam") {
         const svg = document.getElementById("beam-structure-diagram") as SVGSVGElement | null
         if (!svg) throw new Error("Beam structure diagram SVG not found in DOM")
         structureImg = await captureSVGAsImage("beam-structure-diagram", 500, 250)
         if (!structureImg) throw new Error("Failed to capture beam structure diagram image")
+        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 500;
+        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 250;
+        const aspect = origHeight / origWidth;
+        const diagramWidth = 200;
+        const diagramHeight = Math.round(diagramWidth * aspect);
+        const diagramX = (pageWidth - diagramWidth) / 2;
+        // Light gray background
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+        pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        yOffset += diagramHeight + 15;
       } else {
         const svg = document.getElementById("frame-structure-diagram") as SVGSVGElement | null
         if (!svg) throw new Error("Frame structure diagram SVG not found in DOM")
         structureImg = await captureSVGAsImage("frame-structure-diagram", 500, 450)
         if (!structureImg) throw new Error("Failed to capture frame structure diagram image")
-      }
-      if (structureImg) {
-        const diagramWidth = 300
-        const diagramHeight = analysisType === "Simple Beam" ? 120 : 180
-        const diagramX = (pageWidth - diagramWidth) / 2
-        pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-        yOffset += diagramHeight + 15
+        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 500;
+        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 450;
+        const aspect = origHeight / origWidth;
+        const diagramWidth = 200;
+        const diagramHeight = Math.round(diagramWidth * aspect);
+        const diagramX = (pageWidth - diagramWidth) / 2;
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+        pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        yOffset += diagramHeight + 15;
       }
 
       // Corner Loads Diagram (for Base Frame only)
       if (analysisType === "Base Frame") {
         yOffset = addSubsectionHeader("4.2 Corner Loads Analysis", margin, yOffset)
-        yOffset += 5
+        yOffset += 15
         const svg = document.getElementById("corner-loads-diagram") as SVGSVGElement | null
         if (svg) {
           const cornerImg = await captureSVGAsImage("corner-loads-diagram", 500, 450)
           if (cornerImg) {
-            const diagramWidth = 300
-            const diagramHeight = 180
-            const diagramX = (pageWidth - diagramWidth) / 2
-            pdf.addImage(cornerImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-            yOffset += diagramHeight + 15
+            const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 500;
+            const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 450;
+            const aspect = origHeight / origWidth;
+            const diagramWidth = 200;
+            const diagramHeight = Math.round(diagramWidth * aspect);
+            const diagramX = (pageWidth - diagramWidth) / 2;
+            pdf.setFillColor(240, 240, 240);
+            pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+            pdf.addImage(cornerImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+            yOffset += diagramHeight + 15;
           }
         }
       }
@@ -1666,18 +1685,20 @@ export default function BeamLoadCalculator() {
 
       // Shear Force Diagram
       yOffset = addSubsectionHeader("5.1 Shear Force Diagram", margin, yOffset)
-      yOffset += 5
+      yOffset += 15
       try {
         const container = document.getElementById("shear-force-diagram");
         const svg = container?.querySelector("svg") as SVGSVGElement | null;
         if (!svg) throw new Error("Shear force diagram SVG not found in DOM");
-        const diagramWidth = 250;
         const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
         const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
         const aspect = origHeight / origWidth;
+        const diagramWidth = 180;
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
         pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
         yOffset += diagramHeight + 15;
       } catch (err) {
@@ -1687,18 +1708,20 @@ export default function BeamLoadCalculator() {
 
       // Bending Moment Diagram
       yOffset = addSubsectionHeader("5.2 Bending Moment Diagram", margin, yOffset)
-      yOffset += 5
+      yOffset += 15
       try {
         const container = document.getElementById("bending-moment-diagram");
         const svg = container?.querySelector("svg") as SVGSVGElement | null;
         if (!svg) throw new Error("Bending moment diagram SVG not found in DOM");
-        const diagramWidth = 250;
         const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
         const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
         const aspect = origHeight / origWidth;
+        const diagramWidth = 180;
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
         pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
         yOffset += diagramHeight + 15;
       } catch (err) {
