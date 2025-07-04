@@ -1700,9 +1700,20 @@ export default function BeamLoadCalculator() {
       if (analysisType === "Base Frame") {
         results_data.push(["Corner Reaction Force", results.cornerReactionForce.toFixed(2), "N"])
       }
+
+      // Check if table will fit on current page
+      const rowHeight = 8
+      const tableHeight = results_data.length * rowHeight
+      const requiredSpace = tableHeight + 20 // Extra space for padding
+      
+      if (yOffset + requiredSpace > pageHeight - 60) {
+        // Start new page if table won't fit
+        pdf.addPage()
+        yOffset = 30
+      }
+
       // Add table manually
       const tableStartY = yOffset
-      const rowHeight = 8
       const colWidths = [contentWidth * 0.5, contentWidth * 0.3, contentWidth * 0.2]
       let currentY = tableStartY
 
