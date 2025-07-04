@@ -2072,8 +2072,16 @@ export default function BeamLoadCalculator() {
                     <Input
                       type="number"
                       id={`load-area-${index}`}
+                      min={0.1}
+                      step={0.1}
+                      max={((analysisType === "Base Frame" ? frameLength * frameWidth : beamLength * width) / 1_000_000).toFixed(2)}
                       value={load.area || 0.5}
-                      onChange={(e) => updateLoad(index, { area: validatePositive(Number(e.target.value), 0.5) })}
+                      onChange={(e) => {
+                        let val = Math.max(0.1, Number(e.target.value));
+                        const maxArea = (analysisType === "Base Frame" ? frameLength * frameWidth : beamLength * width) / 1_000_000;
+                        if (val > maxArea) val = maxArea;
+                        updateLoad(index, { area: val });
+                      }}
                     />
                   </div>
                 )}
