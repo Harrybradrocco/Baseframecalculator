@@ -1803,6 +1803,7 @@ export default function BeamLoadCalculator() {
     <div className="container mx-auto p-2" style={{ fontFamily: '"Chesna Grotesk", sans-serif' }}>
       <Head>
         <title>Load Calculator</title>
+        <link rel="icon" href="/placeholder-logo.png" />
       </Head>
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-2xl font-bold">Enhanced Load Calculator</h1>
