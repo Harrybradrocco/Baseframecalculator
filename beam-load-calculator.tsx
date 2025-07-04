@@ -2263,8 +2263,8 @@ export default function BeamLoadCalculator() {
               {shearForceData.length > 0 && (
                 <AreaChart data={shearForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="x" />
-                  <YAxis />
+                  <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
+                  <YAxis label={{ value: "Shear Force (N)", angle: -90, position: "insideLeft", offset: 10 }} />
                   <Tooltip />
                   <Area type="monotone" dataKey="y" stroke="#8884d8" fill="#8884d8" />
                   <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
@@ -2282,8 +2282,8 @@ export default function BeamLoadCalculator() {
               {bendingMomentData.length > 0 && (
                 <AreaChart data={bendingMomentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="x" />
-                  <YAxis />
+                  <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
+                  <YAxis label={{ value: "Bending Moment (N·m)", angle: -90, position: "insideLeft", offset: 10 }} />
                   <Tooltip />
                   <Area type="monotone" dataKey="y" stroke="#82ca9d" fill="#82ca9d" />
                   <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
@@ -2301,8 +2301,8 @@ export default function BeamLoadCalculator() {
               {axialForceData.length > 0 && (
                 <AreaChart data={axialForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="x" />
-                  <YAxis />
+                  <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
+                  <YAxis label={{ value: "Axial Force (N)", angle: -90, position: "insideLeft", offset: 10 }} />
                   <Tooltip />
                   <Area type="monotone" dataKey="y" stroke="#ff7300" fill="#ff7300" />
                   <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
