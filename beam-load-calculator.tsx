@@ -2232,14 +2232,16 @@ export default function BeamLoadCalculator() {
           <h3 className="text-lg font-semibold mb-1">Shear Force Diagram</h3>
           <div id="shear-force-diagram" style={{ width: "100%", height: 300 }}>
             <ResponsiveContainer>
-              <AreaChart data={shearForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="x" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="y" stroke="#8884d8" fill="#8884d8" />
-                <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
-              </AreaChart>
+              {shearForceData.length > 0 && (
+                <AreaChart data={shearForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="x" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="y" stroke="#8884d8" fill="#8884d8" />
+                  <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
+                </AreaChart>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
@@ -2249,14 +2251,16 @@ export default function BeamLoadCalculator() {
           <h3 className="text-lg font-semibold mb-1">Bending Moment Diagram</h3>
           <div id="bending-moment-diagram" style={{ width: "100%", height: 300 }}>
             <ResponsiveContainer>
-              <AreaChart data={bendingMomentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="x" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="y" stroke="#82ca9d" fill="#82ca9d" />
-                <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
-              </AreaChart>
+              {bendingMomentData.length > 0 && (
+                <AreaChart data={bendingMomentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="x" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="y" stroke="#82ca9d" fill="#82ca9d" />
+                  <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
+                </AreaChart>
+              )}
             </ResponsiveContainer>
           </div>
         </div>
