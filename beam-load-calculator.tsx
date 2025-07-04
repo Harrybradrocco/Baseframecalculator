@@ -896,6 +896,7 @@ export default function BeamLoadCalculator() {
     totalAppliedLoad: 0,
   })
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
+  const [deflectionData, setDeflectionData] = useState<Array<{ x: number; y: number }>>([])
 
   // Reset loads when analysis type changes
   useEffect(() => {
@@ -1189,7 +1190,7 @@ export default function BeamLoadCalculator() {
     const dx = criticalLength / (numPoints - 1)
     const shearForce = []
     const bendingMoment = []
-    const axialForce = []
+    const deflection = []
 
     if (analysisType === "Simple Beam") {
       // Simple beam diagram calculations
@@ -1213,24 +1214,27 @@ export default function BeamLoadCalculator() {
         }
       })
 
+      // Calculate E and I for deflection
+      const materialProps = material === "Custom" ? customMaterial : standardMaterials[material]
+      const E = materialProps.elasticModulus * 1e9 // Pa
+      // Use momentOfInertia from results (already calculated)
+      const I = results.momentOfInertia
       for (let i = 0; i < numPoints; i++) {
         const x = i * dx
         const xM = x / 1000
         let shear = 0
         let moment = 0
-
+        let delta = 0
         // Add left reaction
         if (xM >= leftSupportM) shear += R1
         // Subtract right reaction
         if (xM >= rightSupportM) shear -= R2
-
         // Subtract loads
         loads.forEach((load) => {
           if (load.type === "Point Load" && xM >= load.startPosition / 1000) {
             shear -= load.magnitude
           }
         })
-
         // Calculate moment
         if (xM >= leftSupportM) {
           moment = R1 * (xM - leftSupportM)
@@ -1238,42 +1242,60 @@ export default function BeamLoadCalculator() {
         if (xM >= rightSupportM) {
           moment -= R2 * (xM - rightSupportM)
         }
-
         loads.forEach((load) => {
           if (load.type === "Point Load" && xM > load.startPosition / 1000) {
             moment -= load.magnitude * (xM - load.startPosition / 1000)
           }
         })
-
+        // Deflection for single point load at a (approximate for first load only)
+        if (loads.length === 1 && loads[0].type === "Point Load" && E > 0 && I > 0) {
+          const P = loads[0].magnitude
+          const a = (loads[0].startPosition - leftSupport) / 1000
+          const b = (rightSupport - loads[0].startPosition) / 1000
+          const L = spanLength
+          if (xM <= a) {
+            delta = (P * b * xM * (L * L - b * b - xM * xM)) / (6 * L * E * I)
+          } else {
+            delta = (P * a * (L - xM) * (2 * L * xM - xM * xM - a * a)) / (6 * L * E * I)
+          }
+        } else {
+          // For multiple loads or uniform loads, use superposition or zero (for now)
+          delta = 0
+        }
         shearForce.push({ x: Number(x.toFixed(2)), y: Number(shear.toFixed(2)) })
         bendingMoment.push({ x: Number(x.toFixed(2)), y: Number(moment.toFixed(2)) })
-        axialForce.push({ x: Number(x.toFixed(2)), y: 0 }) // No axial force by default
+        deflection.push({ x: Number(x.toFixed(2)), y: Number((delta * 1000).toFixed(4)) }) // mm
       }
     } else {
       // Base frame - show critical beam analysis with correct uniform load
       const criticalLength = Math.max(validFrameLength, validFrameWidth)
       const criticalLengthM = criticalLength / 1000
       const uniformLoadPerMeter = results.totalAppliedLoad / 4 / criticalLengthM
-
+      // Use momentOfInertia from results (already calculated)
+      const materialProps = material === "Custom" ? customMaterial : standardMaterials[material]
+      const E = materialProps.elasticModulus * 1e9 // Pa
+      const I = results.momentOfInertia
       for (let i = 0; i < numPoints; i++) {
         const x = i * dx
         const xM = x / 1000
-
         // For simply supported beam with uniform load w (N/m):
         // Shear V(x) = wL/2 - wx
         // Moment M(x) = (wL/2)x - (wx²/2) = wx(L-x)/2
+        // Deflection: δ(x) = (w x (L^3 - 2Lx^2 + x^3)) / (24 E I)
         const shear = (uniformLoadPerMeter * criticalLengthM) / 2 - uniformLoadPerMeter * xM
         const moment = (uniformLoadPerMeter * xM * (criticalLengthM - xM)) / 2
-
+        let delta = 0
+        if (E > 0 && I > 0) {
+          delta = (uniformLoadPerMeter * xM * (Math.pow(criticalLengthM, 3) - 2 * criticalLengthM * xM * xM + Math.pow(xM, 3))) / (24 * E * I)
+        }
         shearForce.push({ x: Number(x.toFixed(2)), y: Number(shear.toFixed(2)) })
         bendingMoment.push({ x: Number(x.toFixed(2)), y: Number(moment.toFixed(2)) })
-        axialForce.push({ x: Number(x.toFixed(2)), y: Number(results.loadPerBeam.toFixed(2)) })
+        deflection.push({ x: Number(x.toFixed(2)), y: Number((delta * 1000).toFixed(4)) }) // mm
       }
     }
-
     setShearForceData(shearForce)
     setBendingMomentData(bendingMoment)
-    setAxialForceData(axialForce)
+    setDeflectionData(deflection)
   }, [
     analysisType,
     beamLength,
@@ -1284,6 +1306,9 @@ export default function BeamLoadCalculator() {
     loads,
     results.totalAppliedLoad,
     results.loadPerBeam,
+    results.momentOfInertia,
+    material,
+    customMaterial,
   ])
 
   useEffect(() => {
@@ -1785,13 +1810,13 @@ export default function BeamLoadCalculator() {
         yOffset += 10;
       }
 
-      // Axial Force Diagram
-      yOffset = addSubsectionHeader("5.3 Axial Force Diagram", margin, yOffset)
+      // Deflection Diagram
+      yOffset = addSubsectionHeader("5.3 Deflection Diagram", margin, yOffset)
       yOffset += 15
       try {
-        const container = document.getElementById("axial-force-diagram");
+        const container = document.getElementById("deflection-diagram");
         const svg = container?.querySelector("svg") as SVGSVGElement | null;
-        if (!svg) throw new Error("Axial force diagram SVG not found in DOM");
+        if (!svg) throw new Error("Deflection diagram SVG not found in DOM");
         const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
         const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
         const aspect = origHeight / origWidth;
@@ -1804,7 +1829,7 @@ export default function BeamLoadCalculator() {
         pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
         yOffset += diagramHeight + 15;
       } catch (err) {
-        yOffset = addWrappedText("[Axial Force Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10);
+        yOffset = addWrappedText("[Deflection Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10);
         yOffset += 10;
       }
 
@@ -2293,16 +2318,16 @@ export default function BeamLoadCalculator() {
           </div>
         </div>
 
-        {/* Axial Force Diagram */}
+        {/* Deflection Diagram */}
         <div className="mb-2">
-          <h3 className="text-lg font-semibold mb-1">Axial Force Diagram</h3>
-          <div id="axial-force-diagram" style={{ width: "100%", height: 300 }}>
+          <h3 className="text-lg font-semibold mb-1">Deflection Diagram</h3>
+          <div id="deflection-diagram" style={{ width: "100%", height: 300 }}>
             <ResponsiveContainer>
-              {axialForceData.length > 0 && (
-                <AreaChart data={axialForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+              {deflectionData.length > 0 && (
+                <AreaChart data={deflectionData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
-                  <YAxis label={{ value: "Axial Force (N)", angle: -90, position: "insideLeft", offset: 10 }} />
+                  <YAxis label={{ value: "Deflection (mm)", angle: -90, position: "insideLeft", offset: 10 }} />
                   <Tooltip />
                   <Area type="monotone" dataKey="y" stroke="#ff7300" fill="#ff7300" />
                   <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
