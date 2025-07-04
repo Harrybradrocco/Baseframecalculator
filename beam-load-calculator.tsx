@@ -10,7 +10,7 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { HelpCircle } from "lucide-react"
+import { HelpCircle, Calculator, Settings, Loader2, FileText, BarChart3, Ruler, Package, Mail, Download, Info } from "lucide-react"
 import { jsPDF } from "jspdf"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,7 +18,6 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts"
 import Head from "next/head"
-import { Mail } from "lucide-react"
 
 const standardMaterials = {
   "ASTM A36 Structural Steel": {
@@ -1919,35 +1918,71 @@ export default function BeamLoadCalculator() {
     }
   }
   return (
-    <div className="container mx-auto p-2" style={{ fontFamily: '"Chesna Grotesk", sans-serif' }}>
+    <div className="container mx-auto p-4 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen" style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
       <Head>
-        <title>Load Calculator</title>
+        <title>Enhanced Load Calculator</title>
         <link rel="icon" href="/placeholder-logo.png" />
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
-      <div className="flex justify-between items-center mb-2">
-        <h1 className="text-2xl font-bold">Enhanced Load Calculator</h1>
-        <div className="flex items-center gap-2">
-          <a href="mailto:hbradroc@uwo.ca" title="Email hbradroc@uwo.ca" className="text-gray-700 hover:text-blue-600 flex items-center">
-            <Mail className="w-4 h-4 mr-1" />
-            <span className="text-xs font-medium hidden sm:inline">hbradroc@uwo.ca</span>
+      
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6 p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Calculator className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Enhanced Load Calculator</h1>
+            <p className="text-sm text-gray-600">Structural Engineering Analysis Tool</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <a 
+            href="mailto:hbradroc@uwo.ca" 
+            title="Email hbradroc@uwo.ca" 
+            className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            <span className="text-sm font-medium hidden sm:inline">hbradroc@uwo.ca</span>
           </a>
-          <Button onClick={handleDownloadPDF} disabled={isGeneratingPDF} size="sm">
-            {isGeneratingPDF ? "Generating PDF..." : "Download PDF Report"}
+          <Button 
+            onClick={handleDownloadPDF} 
+            disabled={isGeneratingPDF} 
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            {isGeneratingPDF ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                Download PDF
+              </>
+            )}
           </Button>
           <HelpDialog />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Configuration Card */}
-        <Card className="p-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Calculations - Configuration</CardTitle>
+        <Card className="shadow-sm border-gray-200">
+          <CardHeader className="pb-4 border-b border-gray-100">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              Configuration
+            </CardTitle>
             <CardDescription className="text-sm">Select analysis type and enter beam properties.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-2 p-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Label htmlFor="analysis-type">Analysis Type</Label>
+          <CardContent className="grid gap-4 p-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Label htmlFor="analysis-type" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-gray-500" />
+                Analysis Type
+              </Label>
               <Select value={analysisType} onValueChange={setAnalysisType}>
                 <SelectTrigger id="analysis-type">
                   <SelectValue placeholder="Select" />
@@ -1961,69 +1996,94 @@ export default function BeamLoadCalculator() {
 
             {analysisType === "Simple Beam" ? (
               <>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="beam-length">Beam Length (mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="beam-length" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Beam Length (mm)
+                  </Label>
                   <Input
                     type="number"
                     id="beam-length"
                     value={beamLength}
                     onChange={(e) => setBeamLength(validatePositive(Number(e.target.value), 1000))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="left-support">Left Support (mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="left-support" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Left Support (mm)
+                  </Label>
                   <Input
                     type="number"
                     id="left-support"
                     value={leftSupport}
                     onChange={(e) => setLeftSupport(validateNumber(Number(e.target.value), 0))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="right-support">Right Support (mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="right-support" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Right Support (mm)
+                  </Label>
                   <Input
                     type="number"
                     id="right-support"
                     value={rightSupport}
                     onChange={(e) => setRightSupport(validatePositive(Number(e.target.value), beamLength))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="frame-length">Frame Length (mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="frame-length" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Frame Length (mm)
+                  </Label>
                   <Input
                     type="number"
                     id="frame-length"
                     value={frameLength}
                     onChange={(e) => setFrameLength(validatePositive(Number(e.target.value), 2000))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="frame-width">Frame Width (mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="frame-width" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Frame Width (mm)
+                  </Label>
                   <Input
                     type="number"
                     id="frame-width"
                     value={frameWidth}
                     onChange={(e) => setFrameWidth(validatePositive(Number(e.target.value), 1000))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-
               </>
             )}
           </CardContent>
         </Card>
 
         {/* Cross-Section Dimensions Card */}
-        <Card className="p-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Cross-Section Dimensions</CardTitle>
+        <Card className="shadow-sm border-gray-200">
+          <CardHeader className="pb-4 border-b border-gray-100">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Package className="w-5 h-5 text-green-600" />
+              Cross-Section Dimensions
+            </CardTitle>
             <CardDescription className="text-sm">Enter the dimensions of the beam cross-section.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-2 p-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Label htmlFor="beam-cross-section">Cross Section</Label>
+          <CardContent className="grid gap-4 p-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Label htmlFor="beam-cross-section" className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-gray-500" />
+                Cross Section
+              </Label>
               <Select value={beamCrossSection} onValueChange={setBeamCrossSection}>
                 <SelectTrigger id="beam-cross-section">
                   <SelectValue placeholder="Select" />
@@ -2037,28 +2097,36 @@ export default function BeamLoadCalculator() {
               </Select>
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center p-4 bg-gray-50 rounded-lg">
               <BeamCrossSectionImage type={beamCrossSection} />
             </div>
 
             {beamCrossSection === "Rectangular" && (
               <>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="width">Width (mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="width" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Width (mm)
+                  </Label>
                   <Input
                     type="number"
                     id="width"
                     value={width}
                     onChange={(e) => setWidth(validatePositive(Number(e.target.value), 100))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="height">Height (mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="height" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Height (mm)
+                  </Label>
                   <Input
                     type="number"
                     id="height"
                     value={height}
                     onChange={(e) => setHeight(validatePositive(Number(e.target.value), 218))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </>
@@ -2066,40 +2134,56 @@ export default function BeamLoadCalculator() {
 
             {(beamCrossSection === "I Beam" || beamCrossSection === "C Channel") && (
               <>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="height">Height (H, mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="height" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Height (H, mm)
+                  </Label>
                   <Input
                     type="number"
                     id="height"
                     value={height}
                     onChange={(e) => setHeight(validatePositive(Number(e.target.value), 218))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="flange-width">Flange Width (bf, mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="flange-width" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Flange Width (bf, mm)
+                  </Label>
                   <Input
                     type="number"
                     id="flange-width"
                     value={flangeWidth}
                     onChange={(e) => setFlangeWidth(validatePositive(Number(e.target.value), 66))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="flange-thickness">Flange Thickness (tf, mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="flange-thickness" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Flange Thickness (tf, mm)
+                  </Label>
                   <Input
                     type="number"
                     id="flange-thickness"
                     value={flangeThickness}
                     onChange={(e) => setFlangeThickness(validatePositive(Number(e.target.value), 3))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="web-thickness">Web Thickness (tw, mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="web-thickness" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Web Thickness (tw, mm)
+                  </Label>
                   <Input
                     type="number"
                     id="web-thickness"
                     value={webThickness}
                     onChange={(e) => setWebThickness(validatePositive(Number(e.target.value), 44.8))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </>
@@ -2107,13 +2191,17 @@ export default function BeamLoadCalculator() {
 
             {beamCrossSection === "Circular" && (
               <>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="diameter">Diameter (D, mm)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="diameter" className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Diameter (D, mm)
+                  </Label>
                   <Input
                     type="number"
                     id="diameter"
                     value={diameter}
                     onChange={(e) => setDiameter(validatePositive(Number(e.target.value), 100))}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </>
@@ -2122,16 +2210,22 @@ export default function BeamLoadCalculator() {
         </Card>
 
         {/* Loads Card */}
-        <Card className="p-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Loads</CardTitle>
+        <Card className="shadow-sm border-gray-200">
+          <CardHeader className="pb-4 border-b border-gray-100">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Loader2 className="w-5 h-5 text-orange-600" />
+              Loads
+            </CardTitle>
             <CardDescription className="text-sm">Add and manage loads applied to the beam.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-2 p-2">
+          <CardContent className="grid gap-4 p-6">
             {loads.map((load, index) => (
-              <div key={index} className="border p-2 rounded-md">
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor={`load-type-${index}`}>Load Type</Label>
+              <div key={index} className="border border-gray-200 p-4 rounded-lg bg-gray-50">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <Label htmlFor={`load-type-${index}`} className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 text-gray-500" />
+                    Load Type
+                  </Label>
                   <Select
                     value={load.type}
                     onValueChange={(value) => updateLoad(index, { type: value as Load["type"] })}
@@ -2146,17 +2240,24 @@ export default function BeamLoadCalculator() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor={`load-magnitude-${index}`}>Magnitude (N)</Label>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <Label htmlFor={`load-magnitude-${index}`} className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-gray-500" />
+                    Magnitude (N)
+                  </Label>
                   <Input
                     type="number"
                     id={`load-magnitude-${index}`}
                     value={load.magnitude}
                     onChange={(e) => updateLoad(index, { magnitude: validateNumber(Number(e.target.value), 1000) })}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor={`load-position-${index}`}>Start Position (mm)</Label>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <Label htmlFor={`load-position-${index}`} className="flex items-center gap-2">
+                    <Ruler className="w-4 h-4 text-gray-500" />
+                    Start Position (mm)
+                  </Label>
                   <Input
                     type="number"
                     id={`load-position-${index}`}
@@ -2169,11 +2270,15 @@ export default function BeamLoadCalculator() {
                         ),
                       })
                     }
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
                 {load.type === "Uniform Load" && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Label htmlFor={`load-end-position-${index}`}>End Position (mm)</Label>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <Label htmlFor={`load-end-position-${index}`} className="flex items-center gap-2">
+                      <Ruler className="w-4 h-4 text-gray-500" />
+                      End Position (mm)
+                    </Label>
                     <Input
                       type="number"
                       id={`load-end-position-${index}`}
@@ -2183,12 +2288,16 @@ export default function BeamLoadCalculator() {
                           endPosition: validateNumber(Number(e.target.value), load.startPosition + 100),
                         })
                       }
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                 )}
                 {load.type === "Distributed Load" && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Label htmlFor={`load-area-${index}`}>Area (m²)</Label>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <Label htmlFor={`load-area-${index}`} className="flex items-center gap-2">
+                      <Ruler className="w-4 h-4 text-gray-500" />
+                      Area (m²)
+                    </Label>
                     <Input
                       type="number"
                       id={`load-area-${index}`}
@@ -2202,29 +2311,36 @@ export default function BeamLoadCalculator() {
                         if (val > maxArea) val = maxArea;
                         updateLoad(index, { area: val });
                       }}
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
                 )}
-                <Button variant="destructive" size="sm" onClick={() => removeLoad(index)}>
-                  Remove
+                <Button variant="destructive" size="sm" onClick={() => removeLoad(index)} className="w-full">
+                  Remove Load
                 </Button>
               </div>
             ))}
-            <Button onClick={addLoad} disabled={loads.length >= 10}>
+            <Button onClick={addLoad} disabled={loads.length >= 10} className="w-full">
               Add Load
             </Button>
           </CardContent>
         </Card>
 
         {/* Material Properties Card */}
-        <Card className="p-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Material Properties</CardTitle>
+        <Card className="shadow-sm border-gray-200">
+          <CardHeader className="pb-4 border-b border-gray-100">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Package className="w-5 h-5 text-purple-600" />
+              Material Properties
+            </CardTitle>
             <CardDescription className="text-sm">Select material and view its properties.</CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-2 p-2">
-            <div className="grid grid-cols-2 gap-2">
-              <Label htmlFor="material">Material</Label>
+          <CardContent className="grid gap-4 p-6">
+            <div className="grid grid-cols-2 gap-4">
+              <Label htmlFor="material" className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-gray-500" />
+                Material
+              </Label>
               <Select value={material} onValueChange={setMaterial}>
                 <SelectTrigger id="material">
                   <SelectValue placeholder="Select" />
@@ -2241,8 +2357,11 @@ export default function BeamLoadCalculator() {
 
             {material === "Custom" ? (
               <>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="yield-strength">Yield Strength (MPa)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="yield-strength" className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-gray-500" />
+                    Yield Strength (MPa)
+                  </Label>
                   <Input
                     type="number"
                     id="yield-strength"
@@ -2250,10 +2369,14 @@ export default function BeamLoadCalculator() {
                     onChange={(e) =>
                       setCustomMaterial({ ...customMaterial, yieldStrength: validateNumber(Number(e.target.value), 0) })
                     }
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="elastic-modulus">Elastic Modulus (GPa)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="elastic-modulus" className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-gray-500" />
+                    Elastic Modulus (GPa)
+                  </Label>
                   <Input
                     type="number"
                     id="elastic-modulus"
@@ -2264,10 +2387,14 @@ export default function BeamLoadCalculator() {
                         elasticModulus: validateNumber(Number(e.target.value), 0),
                       })
                     }
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label htmlFor="density">Density (kg/m³)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="density" className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-gray-500" />
+                    Density (kg/m³)
+                  </Label>
                   <Input
                     type="number"
                     id="density"
@@ -2275,22 +2402,32 @@ export default function BeamLoadCalculator() {
                     onChange={(e) =>
                       setCustomMaterial({ ...customMaterial, density: validateNumber(Number(e.target.value), 0) })
                     }
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
               </>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label>Yield Strength (MPa)</Label>
-                  <Input type="text" value={standardMaterials[material].yieldStrength} readOnly />
+                <div className="grid grid-cols-2 gap-4">
+                  <Label className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-gray-500" />
+                    Yield Strength (MPa)
+                  </Label>
+                  <Input type="text" value={standardMaterials[material].yieldStrength} readOnly className="bg-gray-50" />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label>Elastic Modulus (GPa)</Label>
-                  <Input type="text" value={standardMaterials[material].elasticModulus} readOnly />
+                <div className="grid grid-cols-2 gap-4">
+                  <Label className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-gray-500" />
+                    Elastic Modulus (GPa)
+                  </Label>
+                  <Input type="text" value={standardMaterials[material].elasticModulus} readOnly className="bg-gray-50" />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Label>Density (kg/m³)</Label>
-                  <Input type="text" value={standardMaterials[material].density} readOnly />
+                <div className="grid grid-cols-2 gap-4">
+                  <Label className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-gray-500" />
+                    Density (kg/m³)
+                  </Label>
+                  <Input type="text" value={standardMaterials[material].density} readOnly className="bg-gray-50" />
                 </div>
               </>
             )}
@@ -2298,113 +2435,182 @@ export default function BeamLoadCalculator() {
         </Card>
 
         {/* Results Card */}
-        <Card className="p-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Results</CardTitle>
-            <CardDescription className="text-sm">View the calculated results.</CardDescription>
+        <Card className="shadow-sm border-gray-200 lg:col-span-2">
+          <CardHeader className="pb-4 border-b border-gray-100">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-green-600" />
+              Analysis Results
+            </CardTitle>
+            <CardDescription className="text-sm">View the calculated results and safety factors.</CardDescription>
           </CardHeader>
-          <CardContent className="p-2">
-            <table className="w-full text-sm border-separate border-spacing-y-1">
-              <tbody>
-                <tr><td className="font-medium pr-4">Max Shear Force (N)</td><td>{results.maxShearForce}</td></tr>
-                <tr><td className="font-medium pr-4">Max Bending Moment (N·m)</td><td>{results.maxBendingMoment}</td></tr>
-                <tr><td className="font-medium pr-4">Max Normal Stress (MPa)</td><td>{results.maxNormalStress}</td></tr>
-                <tr><td className="font-medium pr-4">Max Shear Stress (MPa)</td><td>{results.maxShearStress}</td></tr>
-                <tr><td className="font-medium pr-4">Safety Factor</td><td>{results.safetyFactor}</td></tr>
-                <tr><td className="font-medium pr-4">Max Deflection (mm)</td><td>{(results.maxDeflection * 1000).toFixed(3)}</td></tr>
-                <tr><td className="font-medium pr-4">Structure Weight (N)</td><td>{frameWeight}</td></tr>
-              </tbody>
-            </table>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-2xl font-bold text-blue-600">{results.maxShearForce}</div>
+                <div className="text-sm text-gray-600">Max Shear Force (N)</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="text-2xl font-bold text-green-600">{results.maxBendingMoment}</div>
+                <div className="text-sm text-gray-600">Max Bending Moment (N·m)</div>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                <div className="text-2xl font-bold text-orange-600">{results.maxNormalStress}</div>
+                <div className="text-sm text-gray-600">Max Normal Stress (MPa)</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="text-2xl font-bold text-purple-600">{results.maxShearStress}</div>
+                <div className="text-sm text-gray-600">Max Shear Stress (MPa)</div>
+              </div>
+              <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="text-2xl font-bold text-red-600">{results.safetyFactor}</div>
+                <div className="text-sm text-gray-600">Safety Factor</div>
+              </div>
+              <div className="text-center p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                <div className="text-2xl font-bold text-indigo-600">{(results.maxDeflection * 1000).toFixed(3)}</div>
+                <div className="text-sm text-gray-600">Max Deflection (mm)</div>
+              </div>
+              <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="text-2xl font-bold text-gray-600">{frameWeight}</div>
+                <div className="text-sm text-gray-600">Structure Weight (N)</div>
+              </div>
+              {analysisType === "Base Frame" && (
+                <div className="text-center p-4 bg-teal-50 rounded-lg border border-teal-200">
+                  <div className="text-2xl font-bold text-teal-600">{results.cornerReactionForce}</div>
+                  <div className="text-sm text-gray-600">Corner Reaction (N)</div>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Diagrams Section */}
-      <div className="mt-4">
-        <h2 className="text-xl font-semibold mb-2">Diagrams</h2>
+      <div className="mt-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <BarChart3 className="w-6 h-6 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Structural Diagrams</h2>
+        </div>
 
         {/* Structure Diagram */}
-        <div className="mb-2">
-          <h3 className="text-lg font-semibold mb-1">Structure Diagram</h3>
-          {analysisType === "Simple Beam" ? (
-            <BeamDiagram beamLength={beamLength} leftSupport={leftSupport} rightSupport={rightSupport} loads={loads} />
-          ) : (
-            <FrameDiagram frameLength={frameLength} frameWidth={frameWidth} loads={loads} />
-          )}
-        </div>
+        <Card className="mb-6 shadow-sm border-gray-200">
+          <CardHeader className="pb-4 border-b border-gray-100">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Ruler className="w-5 h-5 text-blue-600" />
+              Structure Layout
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {analysisType === "Simple Beam" ? (
+              <BeamDiagram beamLength={beamLength} leftSupport={leftSupport} rightSupport={rightSupport} loads={loads} />
+            ) : (
+              <FrameDiagram frameLength={frameLength} frameWidth={frameWidth} loads={loads} />
+            )}
+          </CardContent>
+        </Card>
 
         {/* Corner Loads Diagram (for Base Frame only) */}
         {analysisType === "Base Frame" && (
-          <div className="mb-2">
-            <h3 className="text-lg font-semibold mb-1">Corner Loads Diagram</h3>
-            <CornerLoadsDiagram
-              frameLength={frameLength}
-              frameWidth={frameWidth}
-              loads={loads}
-              cornerReactionForce={results.cornerReactionForce}
-            />
-          </div>
+          <Card className="mb-6 shadow-sm border-gray-200">
+            <CardHeader className="pb-4 border-b border-gray-100">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-green-600" />
+                Corner Loads Analysis
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <CornerLoadsDiagram
+                frameLength={frameLength}
+                frameWidth={frameWidth}
+                loads={loads}
+                cornerReactionForce={results.cornerReactionForce}
+              />
+            </CardContent>
+          </Card>
         )}
 
-        {/* Shear Force Diagram */}
-        <div className="mb-2">
-          <h3 className="text-lg font-semibold mb-1">Shear Force Diagram</h3>
-          <div id="shear-force-diagram" style={{ width: "100%", height: 300 }}>
-            <ResponsiveContainer>
-              {shearForceData.length > 0 && (
-                <AreaChart data={shearForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
-                  <YAxis label={{ value: "Shear Force (N)", angle: -90, position: "insideLeft", offset: 10 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="y" stroke="#8884d8" fill="#8884d8" />
-                  <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
-                </AreaChart>
-              )}
-            </ResponsiveContainer>
-          </div>
-        </div>
+        {/* Force Diagrams */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Shear Force Diagram */}
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="pb-4 border-b border-gray-100">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-blue-600" />
+                Shear Force Diagram
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div id="shear-force-diagram" style={{ width: "100%", height: 250 }}>
+                <ResponsiveContainer>
+                  {shearForceData.length > 0 && (
+                    <AreaChart data={shearForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
+                      <YAxis label={{ value: "Shear Force (N)", angle: -90, position: "insideLeft", offset: 10 }} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="y" stroke="#8884d8" fill="#8884d8" />
+                      <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
+                    </AreaChart>
+                  )}
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Bending Moment Diagram */}
-        <div className="mb-2">
-          <h3 className="text-lg font-semibold mb-1">Bending Moment Diagram</h3>
-          <div id="bending-moment-diagram" style={{ width: "100%", height: 300 }}>
-            <ResponsiveContainer>
-              {bendingMomentData.length > 0 && (
-                <AreaChart data={bendingMomentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
-                  <YAxis label={{ value: "Bending Moment (N·m)", angle: -90, position: "insideLeft", offset: 10 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="y" stroke="#82ca9d" fill="#82ca9d" />
-                  <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
-                </AreaChart>
-              )}
-            </ResponsiveContainer>
-          </div>
-        </div>
+          {/* Bending Moment Diagram */}
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="pb-4 border-b border-gray-100">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-green-600" />
+                Bending Moment Diagram
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div id="bending-moment-diagram" style={{ width: "100%", height: 250 }}>
+                <ResponsiveContainer>
+                  {bendingMomentData.length > 0 && (
+                    <AreaChart data={bendingMomentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
+                      <YAxis label={{ value: "Bending Moment (N·m)", angle: -90, position: "insideLeft", offset: 10 }} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="y" stroke="#82ca9d" fill="#82ca9d" />
+                      <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
+                    </AreaChart>
+                  )}
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Deflection Diagram */}
-        <div className="mb-2">
-          <h3 className="text-lg font-semibold mb-1">Deflection Diagram</h3>
-          <div id="deflection-diagram" style={{ width: "100%", height: 300 }}>
-            <ResponsiveContainer>
-              {deflectionData.length > 0 && (
-                <AreaChart data={deflectionData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
-                  <YAxis label={{ value: "Deflection (mm)", angle: -90, position: "insideLeft", offset: 10 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="y" stroke="#ff7300" fill="#ff7300" />
-                  <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
-                </AreaChart>
-              )}
-            </ResponsiveContainer>
-          </div>
+          {/* Deflection Diagram */}
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="pb-4 border-b border-gray-100">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-orange-600" />
+                Deflection Diagram
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div id="deflection-diagram" style={{ width: "100%", height: 250 }}>
+                <ResponsiveContainer>
+                  {deflectionData.length > 0 && (
+                    <AreaChart data={deflectionData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
+                      <YAxis label={{ value: "Deflection (mm)", angle: -90, position: "insideLeft", offset: 10 }} />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="y" stroke="#ff7300" fill="#ff7300" />
+                      <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
+                    </AreaChart>
+                  )}
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-
     </div>
   )
 }
