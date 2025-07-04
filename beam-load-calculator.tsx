@@ -870,6 +870,7 @@ export default function BeamLoadCalculator() {
   const [loads, setLoads] = useState<Load[]>([{ type: "Point Load", magnitude: 1000, startPosition: 500 }])
   const [shearForceData, setShearForceData] = useState<Array<{ x: number; y: number }>>([])
   const [bendingMomentData, setBendingMomentData] = useState<Array<{ x: number; y: number }>>([])
+  const [axialForceData, setAxialForceData] = useState<Array<{ x: number; y: number }>>([])
   const [material, setMaterial] = useState<keyof typeof standardMaterials>("ASTM A36 Structural Steel")
   const [customMaterial, setCustomMaterial] = useState({ ...standardMaterials["Custom"] })
   const [width, setWidth] = useState(100)
@@ -1188,6 +1189,7 @@ export default function BeamLoadCalculator() {
     const dx = criticalLength / (numPoints - 1)
     const shearForce = []
     const bendingMoment = []
+    const axialForce = []
 
     if (analysisType === "Simple Beam") {
       // Simple beam diagram calculations
@@ -1245,6 +1247,7 @@ export default function BeamLoadCalculator() {
 
         shearForce.push({ x: Number(x.toFixed(2)), y: Number(shear.toFixed(2)) })
         bendingMoment.push({ x: Number(x.toFixed(2)), y: Number(moment.toFixed(2)) })
+        axialForce.push({ x: Number(x.toFixed(2)), y: 0 }) // No axial force by default
       }
     } else {
       // Base frame - show critical beam analysis with correct uniform load
@@ -1264,11 +1267,13 @@ export default function BeamLoadCalculator() {
 
         shearForce.push({ x: Number(x.toFixed(2)), y: Number(shear.toFixed(2)) })
         bendingMoment.push({ x: Number(x.toFixed(2)), y: Number(moment.toFixed(2)) })
+        axialForce.push({ x: Number(x.toFixed(2)), y: Number(results.loadPerBeam.toFixed(2)) })
       }
     }
 
     setShearForceData(shearForce)
     setBendingMomentData(bendingMoment)
+    setAxialForceData(axialForce)
   }, [
     analysisType,
     beamLength,
@@ -1780,6 +1785,29 @@ export default function BeamLoadCalculator() {
         yOffset += 10;
       }
 
+      // Axial Force Diagram
+      yOffset = addSubsectionHeader("5.3 Axial Force Diagram", margin, yOffset)
+      yOffset += 15
+      try {
+        const container = document.getElementById("axial-force-diagram");
+        const svg = container?.querySelector("svg") as SVGSVGElement | null;
+        if (!svg) throw new Error("Axial force diagram SVG not found in DOM");
+        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
+        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
+        const aspect = origHeight / origWidth;
+        const diagramWidth = 180;
+        const diagramHeight = Math.round(diagramWidth * aspect);
+        const diagramX = (pageWidth - diagramWidth) / 2;
+        const img = await svgToPngDataUrl(svg, origWidth, origHeight);
+        pdf.setFillColor(240, 240, 240);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        yOffset += diagramHeight + 15;
+      } catch (err) {
+        yOffset = addWrappedText("[Axial Force Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10);
+        yOffset += 10;
+      }
+
       // Add page numbers to all pages
       const pageCount = pdf.getNumberOfPages()
       for (let i = 1; i <= pageCount; i++) {
@@ -2258,6 +2286,25 @@ export default function BeamLoadCalculator() {
                   <YAxis />
                   <Tooltip />
                   <Area type="monotone" dataKey="y" stroke="#82ca9d" fill="#82ca9d" />
+                  <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
+                </AreaChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Axial Force Diagram */}
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold mb-1">Axial Force Diagram</h3>
+          <div id="axial-force-diagram" style={{ width: "100%", height: 300 }}>
+            <ResponsiveContainer>
+              {axialForceData.length > 0 && (
+                <AreaChart data={axialForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="x" />
+                  <YAxis />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="y" stroke="#ff7300" fill="#ff7300" />
                   <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
                 </AreaChart>
               )}
