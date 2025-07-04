@@ -56,6 +56,7 @@ interface Load {
   startPosition: number
   endPosition?: number
   area?: number
+  unit?: "N" | "kg" // Add unit field
 }
 
 // Validation helper functions
@@ -880,10 +881,10 @@ export default function BeamLoadCalculator() {
   const [frameWidth, setFrameWidth] = useState(1000)
   const [leftSupport, setLeftSupport] = useState(0)
   const [rightSupport, setRightSupport] = useState(1000)
-  const [loads, setLoads] = useState<Load[]>([{ type: "Point Load", magnitude: 1000, startPosition: 500 }])
+  const [loads, setLoads] = useState<Load[]>([{ type: "Point Load", magnitude: 1000, startPosition: 500, unit: "N" }])
   const [shearForceData, setShearForceData] = useState<Array<{ x: number; y: number }>>([])
   const [bendingMomentData, setBendingMomentData] = useState<Array<{ x: number; y: number }>>([])
-  const [axialForceData, setAxialForceData] = useState<Array<{ x: number; y: number }>>([])
+  const [deflectionData, setDeflectionData] = useState<Array<{ x: number; y: number }>>([])
   const [material, setMaterial] = useState<keyof typeof standardMaterials>("ASTM A36 Structural Steel")
   const [customMaterial, setCustomMaterial] = useState({ ...standardMaterials["Custom"] })
   const [width, setWidth] = useState(100)
@@ -911,12 +912,23 @@ export default function BeamLoadCalculator() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [deflectionData, setDeflectionData] = useState<Array<{ x: number; y: number }>>([])
 
+  // Helper function to convert kg to N
+  const kgToN = (kg: number): number => kg * 9.81
+
+  // Helper function to convert N to kg
+  const nToKg = (n: number): number => n / 9.81
+
+  // Helper function to get load magnitude in N
+  const getLoadMagnitudeInN = (load: Load): number => {
+    return load.unit === "kg" ? kgToN(load.magnitude) : load.magnitude
+  }
+
   // Reset loads when analysis type changes
   useEffect(() => {
     if (analysisType === "Simple Beam") {
-      setLoads([{ type: "Point Load", magnitude: 1000, startPosition: 500 }])
+      setLoads([{ type: "Point Load", magnitude: 1000, startPosition: 500, unit: "N" }])
     } else {
-      setLoads([{ type: "Distributed Load", magnitude: 1000, startPosition: 1000, area: 0.5 }])
+      setLoads([{ type: "Distributed Load", magnitude: 1000, startPosition: 1000, area: 0.5, unit: "N" }])
     }
   }, [analysisType])
 
@@ -924,8 +936,8 @@ export default function BeamLoadCalculator() {
     if (loads.length < 10) {
       const newLoad: Load =
         analysisType === "Simple Beam"
-          ? { type: "Point Load", magnitude: 1000, startPosition: beamLength / 2 }
-          : { type: "Distributed Load", magnitude: 1000, startPosition: frameLength / 2, area: 0.5 }
+          ? { type: "Point Load", magnitude: 1000, startPosition: beamLength / 2, unit: "N" }
+          : { type: "Distributed Load", magnitude: 1000, startPosition: frameLength / 2, area: 0.5, unit: "N" }
       setLoads([...loads, newLoad])
     }
   }
@@ -944,6 +956,9 @@ export default function BeamLoadCalculator() {
           }
           if (newLoad.type === "Distributed Load" && !newLoad.area) {
             newLoad.area = 0.5
+          }
+          if (!newLoad.unit) {
+            newLoad.unit = "N"
           }
           return newLoad
         }
@@ -988,19 +1003,20 @@ export default function BeamLoadCalculator() {
         beamVolume = widthM * heightM
     }
 
-    // Calculate total applied loads
+    // Calculate total applied loads (convert to N if needed)
     let totalAppliedLoad = 0
     loads.forEach((load) => {
+      const magnitudeInN = getLoadMagnitudeInN(load)
       if (load.type === "Distributed Load" && load.area) {
         // For distributed loads: magnitude (N/m²) × area (m²) = total load (N)
-        totalAppliedLoad += load.magnitude * load.area
+        totalAppliedLoad += magnitudeInN * load.area
       } else if (load.type === "Uniform Load" && load.endPosition) {
         // For uniform loads: magnitude (N/m) × length (m) = total load (N)
         const loadLength = (load.endPosition - load.startPosition) / 1000
-        totalAppliedLoad += load.magnitude * loadLength
+        totalAppliedLoad += magnitudeInN * loadLength
       } else {
         // For point loads: magnitude is already in Newtons
-        totalAppliedLoad += load.magnitude
+        totalAppliedLoad += magnitudeInN
       }
     })
 
@@ -1026,13 +1042,14 @@ export default function BeamLoadCalculator() {
 
       loads.forEach((load) => {
         const loadStartPositionM = load.startPosition / 1000
+        const magnitudeInN = getLoadMagnitudeInN(load)
 
         if (load.type === "Point Load") {
           const a = loadStartPositionM - leftSupportM
           const b = rightSupportM - loadStartPositionM
           if (spanLength > 0) {
-            R1 += (load.magnitude * b) / spanLength
-            R2 += (load.magnitude * a) / spanLength
+            R1 += (magnitudeInN * b) / spanLength
+            R2 += (magnitudeInN * a) / spanLength
           }
         } else if (load.type === "Uniform Load") {
           const loadEndPositionM = load.endPosition! / 1000
@@ -1041,7 +1058,7 @@ export default function BeamLoadCalculator() {
 
           if (loadEndM > loadStartM) {
             const loadLengthM = loadEndM - loadStartM
-            const totalLoad = load.magnitude * loadLengthM
+            const totalLoad = magnitudeInN * loadLengthM
             const loadCentroidM = (loadStartM + loadEndM) / 2
 
             const a = loadCentroidM - leftSupportM
@@ -1072,15 +1089,16 @@ export default function BeamLoadCalculator() {
         }
 
         loads.forEach((load) => {
+          const magnitudeInN = getLoadMagnitudeInN(load)
           if (load.type === "Point Load" && x > load.startPosition / 1000) {
-            moment -= load.magnitude * (x - load.startPosition / 1000)
+            moment -= magnitudeInN * (x - load.startPosition / 1000)
           } else if (load.type === "Uniform Load") {
             const loadStartM = load.startPosition / 1000
             const loadEndM = load.endPosition! / 1000
             if (x > loadStartM) {
               const loadedLength = Math.min(x - loadStartM, loadEndM - loadStartM)
               const loadCentroid = loadStartM + loadedLength / 2
-              moment -= load.magnitude * loadedLength * (x - loadCentroid)
+              moment -= magnitudeInN * loadedLength * (x - loadCentroid)
             }
           }
         })
@@ -1217,12 +1235,13 @@ export default function BeamLoadCalculator() {
         R2 = 0
       loads.forEach((load) => {
         const loadStartPositionM = load.startPosition / 1000
+        const magnitudeInN = getLoadMagnitudeInN(load)
         if (load.type === "Point Load") {
           const a = loadStartPositionM - leftSupportM
           const b = rightSupportM - loadStartPositionM
           if (spanLength > 0) {
-            R1 += (load.magnitude * b) / spanLength
-            R2 += (load.magnitude * a) / spanLength
+            R1 += (magnitudeInN * b) / spanLength
+            R2 += (magnitudeInN * a) / spanLength
           }
         } else if (load.type === "Uniform Load") {
           const loadEndPositionM = load.endPosition! / 1000
@@ -1230,7 +1249,7 @@ export default function BeamLoadCalculator() {
           const loadEndM = Math.min(loadEndPositionM, rightSupportM)
           if (loadEndM > loadStartM) {
             const loadLengthM = loadEndM - loadStartM
-            const totalLoad = load.magnitude * loadLengthM
+            const totalLoad = magnitudeInN * loadLengthM
             const loadCentroidM = (loadStartM + loadEndM) / 2
             const a = loadCentroidM - leftSupportM
             const b = rightSupportM - loadCentroidM
@@ -1258,8 +1277,9 @@ export default function BeamLoadCalculator() {
         if (xM >= rightSupportM) shear -= R2
         // Subtract loads
         loads.forEach((load) => {
+          const magnitudeInN = getLoadMagnitudeInN(load)
           if (load.type === "Point Load" && xM >= load.startPosition / 1000) {
-            shear -= load.magnitude
+            shear -= magnitudeInN
           }
         })
         // Calculate moment
@@ -1270,15 +1290,16 @@ export default function BeamLoadCalculator() {
           moment -= R2 * (xM - rightSupportM)
         }
         loads.forEach((load) => {
+          const magnitudeInN = getLoadMagnitudeInN(load)
           if (load.type === "Point Load" && xM > load.startPosition / 1000) {
-            moment -= load.magnitude * (xM - load.startPosition / 1000)
+            moment -= magnitudeInN * (xM - load.startPosition / 1000)
           } else if (load.type === "Uniform Load") {
             const loadStartM = load.startPosition / 1000
             const loadEndM = load.endPosition! / 1000
             if (xM > loadStartM) {
               const loadedLength = Math.min(xM - loadStartM, loadEndM - loadStartM)
               const loadCentroid = loadStartM + loadedLength / 2
-              moment -= load.magnitude * loadedLength * (xM - loadCentroid)
+              moment -= magnitudeInN * loadedLength * (xM - loadCentroid)
             }
           }
         })
@@ -1286,8 +1307,9 @@ export default function BeamLoadCalculator() {
         if (E > 0 && I > 0) {
           // Point loads
           loads.forEach((load) => {
+            const magnitudeInN = getLoadMagnitudeInN(load)
             if (load.type === "Point Load") {
-              const P = load.magnitude
+              const P = magnitudeInN
               const a = (load.startPosition - leftSupport) / 1000
               const b = (rightSupport - load.startPosition) / 1000
               const L = spanLength
@@ -1298,7 +1320,7 @@ export default function BeamLoadCalculator() {
               }
             } else if (load.type === "Uniform Load") {
               // Uniform load over a segment
-              const w = load.magnitude
+              const w = magnitudeInN
               const a = (load.startPosition - leftSupport) / 1000
               const b = (load.endPosition! - leftSupport) / 1000
               const L = spanLength
@@ -2243,15 +2265,49 @@ export default function BeamLoadCalculator() {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <Label htmlFor={`load-magnitude-${index}`} className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-gray-500" />
-                    Magnitude (N)
+                    Magnitude
                   </Label>
-                  <Input
-                    type="number"
-                    id={`load-magnitude-${index}`}
-                    value={load.magnitude}
-                    onChange={(e) => updateLoad(index, { magnitude: validateNumber(Number(e.target.value), 1000) })}
-                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      id={`load-magnitude-${index}`}
+                      value={load.magnitude}
+                      onChange={(e) => updateLoad(index, { magnitude: validateNumber(Number(e.target.value), 1000) })}
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    />
+                    <Select
+                      value={load.unit || "N"}
+                      onValueChange={(value) => updateLoad(index, { unit: value as "N" | "kg" })}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="N">N</SelectItem>
+                        <SelectItem value="kg">kg</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {/* Conversion tooltip */}
+                <div className="mb-4 p-2 bg-blue-50 rounded border border-blue-200">
+                  <div className="text-xs text-blue-700">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-3 h-3" />
+                      <span className="font-medium">Load Conversion:</span>
+                    </div>
+                    <div className="mt-1">
+                      {load.unit === "kg" ? (
+                        <>
+                          <span className="font-mono">{load.magnitude} kg</span> = <span className="font-mono">{(load.magnitude * 9.81).toFixed(1)} N</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="font-mono">{load.magnitude} N</span> = <span className="font-mono">{(load.magnitude / 9.81).toFixed(1)} kg</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <Label htmlFor={`load-position-${index}`} className="flex items-center gap-2">
@@ -2470,7 +2526,13 @@ export default function BeamLoadCalculator() {
                 <div className="text-sm text-gray-600">Max Deflection (mm)</div>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="text-2xl font-bold text-gray-600">{frameWeight}</div>
+                <div className="text-2xl font-bold text-gray-600 group relative">
+                  {frameWeight}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                    <div className="font-mono">{(frameWeight / 9.81).toFixed(1)} kg</div>
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                  </div>
+                </div>
                 <div className="text-sm text-gray-600">Structure Weight (N)</div>
               </div>
               {analysisType === "Base Frame" && (
