@@ -472,20 +472,19 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
       {/* Load indicators */}
       {loads.map((load, index) => {
         if (load.type === "Distributed Load" && load.area) {
-          const loadAreaSide = Math.sqrt(validatePositive(load.area, 1))
-          const loadStartPos = validateNumber(load.startPosition, 0)
-          const x = margin + loadStartPos * scaleX - (loadAreaSide * scaleX) / 2
-          const y = margin + 30 + (validFrameWidth * scaleY) / 2 - (loadAreaSide * scaleY) / 2
-
-          const loadValue = load.magnitude * load.area
-
+          // Convert area (m²) to side length in mm
+          const loadAreaSideMM = Math.sqrt(validatePositive(load.area, 1)) * 1000;
+          const loadStartPos = validateNumber(load.startPosition, 0);
+          const x = margin + loadStartPos * scaleX - (loadAreaSideMM * scaleX) / 2;
+          const y = margin + 30 + (validFrameWidth * scaleY) / 2 - (loadAreaSideMM * scaleY) / 2;
+          const loadValue = load.magnitude * load.area;
           return (
             <g key={index}>
               <rect
                 x={Math.max(margin, validateNumber(x, margin))}
                 y={Math.max(margin + 30, validateNumber(y, margin + 30))}
-                width={validatePositive(Math.min(loadAreaSide * scaleX, validFrameLength * scaleX), 10)}
-                height={validatePositive(Math.min(loadAreaSide * scaleY, validFrameWidth * scaleY), 10)}
+                width={validatePositive(Math.min(loadAreaSideMM * scaleX, validFrameLength * scaleX), 10)}
+                height={validatePositive(Math.min(loadAreaSideMM * scaleY, validFrameWidth * scaleY), 10)}
                 fill="rgba(255, 0, 0, 0.3)"
                 stroke="red"
                 strokeWidth="1"
@@ -493,7 +492,7 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
               <text
                 x={
                   Math.max(margin, validateNumber(x, margin)) +
-                  validatePositive(Math.min(loadAreaSide * scaleX, validFrameLength * scaleX), 10) / 2
+                  validatePositive(Math.min(loadAreaSideMM * scaleX, validFrameLength * scaleX), 10) / 2
                 }
                 y={Math.max(margin + 30, validateNumber(y, margin + 30)) - 8}
                 textAnchor="middle"
@@ -504,7 +503,7 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
                 {loadValue.toFixed(0)}N
               </text>
             </g>
-          )
+          );
         } else {
           const loadStartPos = validateNumber(load.startPosition, 0)
           const x = margin + loadStartPos * scaleX
@@ -670,20 +669,19 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
       {/* Applied loads */}
       {loads.map((load, index) => {
         if (load.type === "Distributed Load" && load.area) {
-          const loadAreaSide = Math.sqrt(validatePositive(load.area, 1))
-          const loadStartPos = validateNumber(load.startPosition, 0)
-          const x = margin + loadStartPos * scaleX - (loadAreaSide * scaleX) / 2
-          const y = margin + 40 + (validFrameWidth * scaleY) / 2 - (loadAreaSide * scaleY) / 2
-
-          const loadValue = load.magnitude * load.area
-
+          // Convert area (m²) to side length in mm
+          const loadAreaSideMM = Math.sqrt(validatePositive(load.area, 1)) * 1000;
+          const loadStartPos = validateNumber(load.startPosition, 0);
+          const x = margin + loadStartPos * scaleX - (loadAreaSideMM * scaleX) / 2;
+          const y = margin + 40 + (validFrameWidth * scaleY) / 2 - (loadAreaSideMM * scaleY) / 2;
+          const loadValue = load.magnitude * load.area;
           return (
             <g key={index}>
               <rect
                 x={Math.max(margin, validateNumber(x, margin))}
                 y={Math.max(margin + 40, validateNumber(y, margin + 40))}
-                width={validatePositive(Math.min(loadAreaSide * scaleX, validFrameLength * scaleX), 10)}
-                height={validatePositive(Math.min(loadAreaSide * scaleY, validFrameWidth * scaleY), 10)}
+                width={validatePositive(Math.min(loadAreaSideMM * scaleX, validFrameLength * scaleX), 10)}
+                height={validatePositive(Math.min(loadAreaSideMM * scaleY, validFrameWidth * scaleY), 10)}
                 fill="rgba(255, 0, 0, 0.3)"
                 stroke="red"
                 strokeWidth="2"
@@ -691,7 +689,7 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
               <text
                 x={
                   Math.max(margin, validateNumber(x, margin)) +
-                  validatePositive(Math.min(loadAreaSide * scaleX, validFrameLength * scaleX), 10) / 2
+                  validatePositive(Math.min(loadAreaSideMM * scaleX, validFrameLength * scaleX), 10) / 2
                 }
                 y={Math.max(margin + 40, validateNumber(y, margin + 40)) - 8}
                 textAnchor="middle"
@@ -702,7 +700,7 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
                 {loadValue.toFixed(0)}N
               </text>
             </g>
-          )
+          );
         } else {
           const loadStartPos = validateNumber(load.startPosition, 0)
           const x = margin + loadStartPos * scaleX
