@@ -58,7 +58,7 @@ interface Load {
   area?: number // For backward compatibility and simple beam
   loadLength?: number // Length of distributed load component (mm) - for baseframe
   loadWidth?: number // Width of distributed load component (mm) - for baseframe
-  unit?: "N" | "kg" // Add unit field
+  unit?: "N" | "kg" | "lbs" // Add unit field
   name?: string // Name/label for the load to display in diagrams
 }
 
@@ -1086,13 +1086,19 @@ export default function BeamLoadCalculator() {
 
   // Helper function to convert kg to N
   const kgToN = (kg: number): number => kg * 9.81
+  const lbsToN = (lbs: number): number => lbs * 4.44822 // 1 pound-force = 4.44822 Newtons
 
   // Helper function to convert N to kg
   const nToKg = (n: number): number => n / 9.81
 
   // Helper function to get load magnitude in N
   const getLoadMagnitudeInN = (load: Load): number => {
-    return load.unit === "kg" ? kgToN(load.magnitude) : load.magnitude
+    if (load.unit === "kg") {
+      return kgToN(load.magnitude)
+    } else if (load.unit === "lbs") {
+      return lbsToN(load.magnitude)
+    }
+    return load.magnitude // Default to N
   }
 
   // Reset loads when analysis type changes
@@ -2917,14 +2923,15 @@ export default function BeamLoadCalculator() {
                     />
                     <Select
                       value={load.unit || "N"}
-                      onValueChange={(value) => updateLoad(index, { unit: value as "N" | "kg" })}
+                      onValueChange={(value) => updateLoad(index, { unit: value as "N" | "kg" | "lbs" })}
                     >
-                      <SelectTrigger className="w-20">
+                      <SelectTrigger className="w-24">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="N">N</SelectItem>
                         <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="lbs">lbs</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -2939,11 +2946,15 @@ export default function BeamLoadCalculator() {
                     <div className="mt-1">
                       {load.unit === "kg" ? (
                         <>
-                          <span className="font-mono">{load.magnitude} kg</span> = <span className="font-mono">{(load.magnitude * 9.81).toFixed(1)} N</span>
+                          <span className="font-mono">{load.magnitude} kg</span> = <span className="font-mono">{(load.magnitude * 9.81).toFixed(1)} N</span> = <span className="font-mono">{(load.magnitude * 2.20462).toFixed(1)} lbs</span>
+                        </>
+                      ) : load.unit === "lbs" ? (
+                        <>
+                          <span className="font-mono">{load.magnitude} lbs</span> = <span className="font-mono">{(load.magnitude * 4.44822).toFixed(1)} N</span> = <span className="font-mono">{(load.magnitude / 2.20462).toFixed(1)} kg</span>
                         </>
                       ) : (
                         <>
-                          <span className="font-mono">{load.magnitude} N</span> = <span className="font-mono">{(load.magnitude / 9.81).toFixed(1)} kg</span>
+                          <span className="font-mono">{load.magnitude} N</span> = <span className="font-mono">{(load.magnitude / 9.81).toFixed(1)} kg</span> = <span className="font-mono">{(load.magnitude / 4.44822).toFixed(1)} lbs</span>
                         </>
                       )}
                     </div>
