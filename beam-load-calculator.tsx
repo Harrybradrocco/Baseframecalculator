@@ -525,7 +525,7 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
           }
           
           const loadStartPos = validateNumber(load.startPosition, 0);
-          const x = margin + loadStartPos * scaleX - (loadLengthMM * scaleX) / 2;
+          const x = margin + loadStartPos * scaleX; // Start from left side (startPosition)
           const y = margin + 30 + (validFrameWidth * scaleY) / 2 - (loadWidthMM * scaleY) / 2;
           const loadValue = load.magnitude * loadArea;
           return (
@@ -721,19 +721,25 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           {/* Reaction force arrow */}
           <line
             x1={corner.x}
-            y1={corner.y - 35}
+            y1={corner.y - 70}
             x2={corner.x}
             y2={corner.y}
             stroke="blue"
             strokeWidth="3"
             markerEnd="url(#blueArrowhead)"
           />
-          {/* Force label */}
-          <text x={corner.x} y={corner.y - 45} textAnchor="middle" fontSize="12" fill="blue" fontWeight="bold">
+          {/* Force label with better visibility */}
+          <text x={corner.x} y={corner.y - 80} textAnchor="middle" fontSize="14" fill="blue" fontWeight="bold">
             {corner.label}
           </text>
-          <text x={corner.x} y={corner.y - 32} textAnchor="middle" fontSize="10" fill="blue">
-            {corner.reaction.toFixed(0)}N
+          <text x={corner.x} y={corner.y - 65} textAnchor="middle" fontSize="12" fill="blue" fontWeight="bold">
+            {corner.reaction.toFixed(0)} N
+          </text>
+          <text x={corner.x} y={corner.y - 52} textAnchor="middle" fontSize="11" fill="blue">
+            {(corner.reaction / 9.81).toFixed(1)} kgf
+          </text>
+          <text x={corner.x} y={corner.y - 40} textAnchor="middle" fontSize="11" fill="blue">
+            {(corner.reaction / 4.44822).toFixed(1)} lbf
           </text>
         </g>
       ))}
@@ -760,7 +766,7 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           }
           
           const loadStartPos = validateNumber(load.startPosition, 0);
-          const x = margin + loadStartPos * scaleX - (loadLengthMM * scaleX) / 2;
+          const x = margin + loadStartPos * scaleX; // Start from left side (startPosition)
           const y = margin + 40 + (validFrameWidth * scaleY) / 2 - (loadWidthMM * scaleY) / 2;
           const loadValue = load.magnitude * loadArea;
           return (
@@ -1595,35 +1601,94 @@ export default function BeamLoadCalculator() {
         let shear = 0
         let moment = 0
         let delta = 0
-        // Add left reaction
+        // Add left reaction (only if we're past the left support)
         if (xM >= leftSupportM) shear += R1
-        // Subtract right reaction
+        // Subtract right reaction (only if we're past the right support)
         if (xM >= rightSupportM) shear -= R2
         // Subtract loads
         loads.forEach((load) => {
           const magnitudeInN = getLoadMagnitudeInN(load)
-          if (load.type === "Point Load" && xM >= load.startPosition / 1000) {
-            shear -= magnitudeInN
+          if (load.type === "Point Load") {
+            // Point load: subtract if we're past the load position
+            const loadPosM = load.startPosition / 1000
+            if (xM > loadPosM) {
+              shear -= magnitudeInN
+            }
+          } else if (load.type === "Uniform Load" && load.endPosition) {
+            // Uniform load: subtract load per unit length times loaded length up to x
+            const loadStartM = load.startPosition / 1000
+            const loadEndM = load.endPosition / 1000
+            if (xM > loadStartM) {
+              const loadedLength = Math.min(xM - loadStartM, loadEndM - loadStartM)
+              shear -= magnitudeInN * loadedLength
+            }
+          } else if (load.type === "Distributed Load") {
+            // Distributed load: similar to uniform load but based on area
+            const loadStartM = load.startPosition / 1000
+            let loadLengthM = 0
+            if (load.loadLength) {
+              loadLengthM = load.loadLength / 1000
+            } else if (load.area) {
+              loadLengthM = Math.sqrt(load.area)
+            }
+            if (loadLengthM > 0 && xM > loadStartM) {
+              const loadedLength = Math.min(xM - loadStartM, loadLengthM)
+              // For distributed load, magnitude is per m², so we need to multiply by width
+              let loadWidthM = 1 // Default 1m width if not specified
+              if (load.loadWidth) {
+                loadWidthM = load.loadWidth / 1000
+              } else if (load.area && loadLengthM > 0) {
+                loadWidthM = load.area / loadLengthM
+              }
+              shear -= magnitudeInN * loadedLength * loadWidthM
+            }
           }
         })
         // Calculate moment
+        // Moment from left reaction (only if past left support)
         if (xM >= leftSupportM) {
           moment = R1 * (xM - leftSupportM)
         }
+        // Moment from right reaction (only if past right support, subtract because it's downward)
         if (xM >= rightSupportM) {
           moment -= R2 * (xM - rightSupportM)
         }
+        // Moment from loads
         loads.forEach((load) => {
           const magnitudeInN = getLoadMagnitudeInN(load)
-          if (load.type === "Point Load" && xM > load.startPosition / 1000) {
-            moment -= magnitudeInN * (xM - load.startPosition / 1000)
-          } else if (load.type === "Uniform Load") {
+          if (load.type === "Point Load") {
+            // Point load: moment = force × distance from load to point x
+            const loadPosM = load.startPosition / 1000
+            if (xM > loadPosM) {
+              moment -= magnitudeInN * (xM - loadPosM)
+            }
+          } else if (load.type === "Uniform Load" && load.endPosition) {
+            // Uniform load: moment from distributed load
             const loadStartM = load.startPosition / 1000
-            const loadEndM = load.endPosition! / 1000
+            const loadEndM = load.endPosition / 1000
             if (xM > loadStartM) {
               const loadedLength = Math.min(xM - loadStartM, loadEndM - loadStartM)
               const loadCentroid = loadStartM + loadedLength / 2
+              // Total load = w × length, moment = total load × distance from centroid
               moment -= magnitudeInN * loadedLength * (xM - loadCentroid)
+            }
+          } else if (load.type === "Distributed Load") {
+            // Distributed load: similar to uniform but with area
+            const loadStartM = load.startPosition / 1000
+            let loadLengthM = 0
+            let loadWidthM = 1
+            if (load.loadLength && load.loadWidth) {
+              loadLengthM = load.loadLength / 1000
+              loadWidthM = load.loadWidth / 1000
+            } else if (load.area) {
+              loadLengthM = Math.sqrt(load.area)
+              loadWidthM = load.area / loadLengthM
+            }
+            if (loadLengthM > 0 && xM > loadStartM) {
+              const loadedLength = Math.min(xM - loadStartM, loadLengthM)
+              const loadCentroid = loadStartM + loadedLength / 2
+              // Total load = magnitude (N/m²) × loaded area
+              moment -= magnitudeInN * loadedLength * loadWidthM * (xM - loadCentroid)
             }
           }
         })
