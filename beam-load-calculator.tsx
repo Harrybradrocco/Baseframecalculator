@@ -1047,18 +1047,54 @@ export default function BeamLoadCalculator() {
     if (analysisType === "Simple Beam") {
       setLoads([{ type: "Point Load", magnitude: 1000, startPosition: 500, unit: "N" }])
     } else {
-      setLoads([{ type: "Distributed Load", magnitude: 1000, startPosition: 1000, loadLength: 500, loadWidth: frameWidth, unit: "N" }])
+      // For base frame, start first load at position 0
+      setLoads([{ type: "Distributed Load", magnitude: 1000, startPosition: 0, loadLength: 500, loadWidth: frameWidth, unit: "N" }])
     }
   }, [analysisType, frameWidth])
 
   const addLoad = () => {
     if (loads.length < 10) {
+      // Calculate the end position of the last load to set as start position for new load
+      let nextStartPosition = 0
+      
+      if (loads.length > 0) {
+        const lastLoad = loads[loads.length - 1]
+        
+        if (lastLoad.type === "Distributed Load") {
+          if (analysisType === "Base Frame" && lastLoad.loadLength) {
+            // For base frame: end position = startPosition + loadLength
+            nextStartPosition = lastLoad.startPosition + lastLoad.loadLength
+          } else if (lastLoad.area) {
+            // For simple beam: calculate length from area (assuming square)
+            const sideLengthMM = Math.sqrt(lastLoad.area) * 1000
+            nextStartPosition = lastLoad.startPosition + sideLengthMM
+          } else {
+            // Fallback: use startPosition + default length
+            nextStartPosition = lastLoad.startPosition + 500
+          }
+        } else if (lastLoad.type === "Uniform Load" && lastLoad.endPosition) {
+          // For uniform load: end position is explicitly defined
+          nextStartPosition = lastLoad.endPosition
+        } else {
+          // For point load: use startPosition (point loads have no length)
+          // But for sequential loads, we'll add a small offset
+          nextStartPosition = lastLoad.startPosition + 100
+        }
+      } else {
+        // First load starts at 0
+        nextStartPosition = 0
+      }
+      
+      // Ensure the start position doesn't exceed the frame/beam length
+      const maxLength = analysisType === "Simple Beam" ? beamLength : frameLength
+      nextStartPosition = Math.min(nextStartPosition, maxLength)
+      
       const newLoad: Load =
         analysisType === "Simple Beam"
-          ? { type: "Point Load", magnitude: 1000, startPosition: beamLength / 2, unit: "N" }
+          ? { type: "Point Load", magnitude: 1000, startPosition: nextStartPosition, unit: "N" }
           : analysisType === "Base Frame"
-          ? { type: "Distributed Load", magnitude: 1000, startPosition: frameLength / 2, loadLength: 500, loadWidth: frameWidth, unit: "N" }
-          : { type: "Distributed Load", magnitude: 1000, startPosition: frameLength / 2, area: 0.5, unit: "N" }
+          ? { type: "Distributed Load", magnitude: 1000, startPosition: nextStartPosition, loadLength: 500, loadWidth: frameWidth, unit: "N" }
+          : { type: "Distributed Load", magnitude: 1000, startPosition: nextStartPosition, area: 0.5, unit: "N" }
       setLoads([...loads, newLoad])
     }
   }
