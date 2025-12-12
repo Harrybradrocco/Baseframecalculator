@@ -1648,13 +1648,22 @@ export default function BeamLoadCalculator() {
         return y + lines.length * lineHeight
       }
 
-      // Helper function to add section headers
+      // Helper function to add section headers with professional styling
       const addSectionHeader = (title: string, x: number, y: number): number => {
+        // Background bar
+        pdf.setFillColor(41, 128, 185)
+        pdf.rect(x - 5, y - 8, contentWidth + 10, 12, "F")
+        
+        // Title text
         pdf.setFontSize(14)
         pdf.setFont("helvetica", "bold")
-        pdf.text(title, x, y)
+        pdf.setTextColor(255, 255, 255)
+        pdf.text(title, x, y + 2)
+        
+        // Reset colors
+        pdf.setTextColor(0, 0, 0)
         pdf.setFont("helvetica", "normal")
-        return y + 8
+        return y + 10
       }
 
       // Helper function to add subsection headers
@@ -1677,18 +1686,41 @@ export default function BeamLoadCalculator() {
         return await svgToPngDataUrl(svg, width, height);
       }
 
-      // Title Page
-      pdf.setFontSize(24)
+      // Title Page - Professional Design
+      // Header bar
+      pdf.setFillColor(41, 128, 185)
+      pdf.rect(0, 0, pageWidth, 30, "F")
+      
+      // Title
+      pdf.setFontSize(28)
       pdf.setFont("helvetica", "bold")
-      pdf.text("Load Analysis Report", pageWidth / 2, 40, { align: "center" })
-
+      pdf.setTextColor(255, 255, 255)
+      pdf.text("STRUCTURAL LOAD ANALYSIS REPORT", pageWidth / 2, 20, { align: "center" })
+      
+      // Reset text color
+      pdf.setTextColor(0, 0, 0)
+      
+      // Main title
+      pdf.setFontSize(32)
+      pdf.setFont("helvetica", "bold")
+      pdf.setTextColor(41, 128, 185)
+      pdf.text(analysisType === "Simple Beam" ? "BEAM ANALYSIS" : "BASEFRAME ANALYSIS", pageWidth / 2, 70, { align: "center" })
+      
       // Subtitle
       pdf.setFontSize(16)
       pdf.setFont("helvetica", "normal")
-      pdf.text("Structural Engineering Analysis", pageWidth / 2, 55, { align: "center" })
-
+      pdf.setTextColor(100, 100, 100)
+      pdf.text("Structural Engineering Analysis & Design", pageWidth / 2, 85, { align: "center" })
+      
+      // Decorative line
+      pdf.setLineWidth(2)
+      pdf.setDrawColor(41, 128, 185)
+      pdf.line(pageWidth / 2 - 60, 100, pageWidth / 2 + 60, 100)
+      
       // Date and time
-      pdf.setFontSize(12)
+      pdf.setFontSize(11)
+      pdf.setFont("helvetica", "normal")
+      pdf.setTextColor(0, 0, 0)
       const now = new Date()
       const dateStr = now.toLocaleDateString("en-US", {
         year: "numeric",
@@ -1699,12 +1731,40 @@ export default function BeamLoadCalculator() {
         hour: "2-digit",
         minute: "2-digit",
       })
-      pdf.text(`Date: ${dateStr}`, pageWidth / 2, 70, { align: "center" })
-      pdf.text(`Prepared by: hbradroc@uwo.ca`, pageWidth / 2, 80, { align: "center" })
-
-      // Add a line separator
+      
+      // Information box
+      const infoBoxY = 130
+      pdf.setFillColor(245, 247, 250)
+      pdf.rect(margin, infoBoxY, contentWidth, 50, "F")
+      pdf.setDrawColor(200, 200, 200)
       pdf.setLineWidth(0.5)
-      pdf.line(margin, 95, pageWidth - margin, 95)
+      pdf.rect(margin, infoBoxY, contentWidth, 50)
+      
+      pdf.setFontSize(10)
+      pdf.setFont("helvetica", "bold")
+      pdf.text("Report Information", margin + 5, infoBoxY + 8)
+      pdf.setFont("helvetica", "normal")
+      pdf.text(`Date: ${dateStr}`, margin + 5, infoBoxY + 18)
+      pdf.text(`Time: ${timeStr}`, margin + 5, infoBoxY + 28)
+      pdf.text(`Prepared by: hbradroc@uwo.ca`, margin + 5, infoBoxY + 38)
+      
+      // Analysis type badge
+      pdf.setFillColor(41, 128, 185)
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(10)
+      pdf.setFont("helvetica", "bold")
+      const badgeText = analysisType.toUpperCase()
+      const badgeWidth = pdf.getTextWidth(badgeText) + 10
+      pdf.rect(pageWidth - margin - badgeWidth, infoBoxY + 8, badgeWidth, 12, "F")
+      pdf.text(badgeText, pageWidth - margin - badgeWidth / 2, infoBoxY + 16, { align: "center" })
+      
+      // Reset colors
+      pdf.setTextColor(0, 0, 0)
+      
+      // Footer line
+      pdf.setDrawColor(41, 128, 185)
+      pdf.setLineWidth(1)
+      pdf.line(margin, pageHeight - 30, pageWidth - margin, pageHeight - 30)
 
       // Declare yOffset at the top before any use
       let yOffset = 0;
@@ -1713,43 +1773,37 @@ export default function BeamLoadCalculator() {
       pdf.addPage()
       yOffset = 30
       yOffset = addSectionHeader("TABLE OF CONTENTS", margin, yOffset)
-      yOffset += 20
+      yOffset += 15
 
-      // TOC entries
+      // TOC entries with dotted lines
       pdf.setFontSize(11)
-      pdf.setFont("helvetica", "bold")
-      pdf.text("1. CONFIGURATION", margin, yOffset)
-      pdf.setFont("helvetica", "normal")
-      pdf.text("4", pageWidth - margin - 10, yOffset, { align: "right" })
-      yOffset += 15
-
-      pdf.setFont("helvetica", "bold")
-      pdf.text("2. LOADING CONDITIONS", margin, yOffset)
-      pdf.setFont("helvetica", "normal")
-      pdf.text("5", pageWidth - margin - 10, yOffset, { align: "right" })
-      yOffset += 15
-
-      pdf.setFont("helvetica", "bold")
-      pdf.text("3. ANALYSIS RESULTS", margin, yOffset)
-      pdf.setFont("helvetica", "normal")
-      pdf.text("6", pageWidth - margin - 10, yOffset, { align: "right" })
-      yOffset += 15
-
-      pdf.setFont("helvetica", "bold")
-      pdf.text("4. STRUCTURAL DIAGRAMS", margin, yOffset)
-      pdf.setFont("helvetica", "normal")
-      pdf.text("7", pageWidth - margin - 10, yOffset, { align: "right" })
-      yOffset += 15
-
-      pdf.setFont("helvetica", "bold")
-      pdf.text("5. FORCE DIAGRAMS", margin, yOffset)
-      pdf.setFont("helvetica", "normal")
-      pdf.text("8", pageWidth - margin - 10, yOffset, { align: "right" })
-      yOffset += 20
-
-      // Add line separator
-      pdf.setLineWidth(0.5)
-      pdf.line(margin, yOffset, pageWidth - margin, yOffset)
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.3)
+      
+      const tocEntries = [
+        { title: "1. CONFIGURATION", page: "4" },
+        { title: "2. LOADING CONDITIONS", page: "5" },
+        { title: "3. ANALYSIS RESULTS", page: "6" },
+        { title: "4. STRUCTURAL DIAGRAMS", page: "7" },
+        { title: "5. FORCE DIAGRAMS", page: "8" },
+      ]
+      
+      tocEntries.forEach((entry, index) => {
+        pdf.setFont("helvetica", "bold")
+        pdf.text(entry.title, margin, yOffset)
+        
+        // Dotted line
+        const dotStartX = margin + pdf.getTextWidth(entry.title) + 5
+        const dotEndX = pageWidth - margin - 20
+        const dotY = yOffset - 2
+        for (let x = dotStartX; x < dotEndX; x += 2) {
+          pdf.circle(x, dotY, 0.3, "F")
+        }
+        
+        pdf.setFont("helvetica", "normal")
+        pdf.text(entry.page, pageWidth - margin - 10, yOffset, { align: "right" })
+        yOffset += 18
+      })
 
       // Add a new page for the first section
       pdf.addPage()
@@ -1884,31 +1938,74 @@ export default function BeamLoadCalculator() {
       )
       yOffset += 3
 
+      // Create a table for loads
+      const loadTableStartY = yOffset
+      const loadRowHeight = 10
+      const loadColWidths = [contentWidth * 0.15, contentWidth * 0.35, contentWidth * 0.25, contentWidth * 0.25]
+      
+      // Table header
+      pdf.setFillColor(41, 128, 185)
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(10)
+      pdf.rect(margin, loadTableStartY, contentWidth, loadRowHeight, "F")
+      pdf.text("Load #", margin + 2, loadTableStartY + 7)
+      pdf.text("Type", margin + loadColWidths[0] + 2, loadTableStartY + 7)
+      pdf.text("Description", margin + loadColWidths[0] + loadColWidths[1] + 2, loadTableStartY + 7)
+      pdf.text("Total Load (N)", margin + loadColWidths[0] + loadColWidths[1] + loadColWidths[2] + 2, loadTableStartY + 7)
+      
+      let currentLoadY = loadTableStartY + loadRowHeight
+      pdf.setTextColor(0, 0, 0)
+      pdf.setFont("helvetica", "normal")
+      
       loads.forEach((load, index) => {
         let loadValue = 0
         let loadDescription = ""
+        let loadType = load.type
 
-        if (load.type === "Distributed Load" && load.area) {
-          loadValue = load.magnitude * load.area
-          loadDescription = `${load.magnitude} N/m² over ${load.area} m² area`
+        if (load.type === "Distributed Load") {
+          if (analysisType === "Base Frame" && load.loadLength && load.loadWidth) {
+            // Base frame distributed load
+            const loadArea = (load.loadLength * load.loadWidth) / 1_000_000 // Convert mm² to m²
+            loadValue = load.magnitude * loadArea
+            loadDescription = `${load.loadLength}mm × ${load.loadWidth}mm (${loadArea.toFixed(4)} m²)`
+          } else if (load.area) {
+            // Simple beam distributed load
+            loadValue = load.magnitude * load.area
+            loadDescription = `${load.area} m² area`
+          }
+          loadType = `Distributed (${load.magnitude} N/m²)`
         } else if (load.type === "Uniform Load" && load.endPosition) {
           const loadLength = (load.endPosition - load.startPosition) / 1000
           loadValue = load.magnitude * loadLength
-          loadDescription = `${load.magnitude} N/m over ${loadLength.toFixed(2)} m length`
+          loadDescription = `${loadLength.toFixed(2)} m length`
+          loadType = `Uniform (${load.magnitude} N/m)`
         } else {
           loadValue = load.magnitude
-          loadDescription = `${load.magnitude} N point load`
+          loadDescription = `Position: ${load.startPosition} mm`
+          loadType = `Point Load`
         }
 
-        yOffset = addWrappedText(
-          `Load ${index + 1}: ${loadDescription} = ${loadValue.toFixed(1)} N`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
+        // Alternate row color
+        if (index % 2 === 0) {
+          pdf.setFillColor(250, 250, 250)
+          pdf.rect(margin, currentLoadY, contentWidth, loadRowHeight, "F")
+        }
+
+        pdf.text(`${index + 1}`, margin + 2, currentLoadY + 7)
+        pdf.text(loadType, margin + loadColWidths[0] + 2, currentLoadY + 7)
+        pdf.text(loadDescription, margin + loadColWidths[0] + loadColWidths[1] + 2, currentLoadY + 7)
+        pdf.text(loadValue.toFixed(1), margin + loadColWidths[0] + loadColWidths[1] + loadColWidths[2] + 2, currentLoadY + 7)
+        
+        currentLoadY += loadRowHeight
       })
+      
+      // Table border
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.5)
+      pdf.rect(margin, loadTableStartY, contentWidth, currentLoadY - loadTableStartY)
+      
+      yOffset = currentLoadY + 10
 
       if (analysisType === "Base Frame") {
         yOffset += 3
@@ -1947,7 +2044,7 @@ export default function BeamLoadCalculator() {
       ]
 
       if (analysisType === "Base Frame") {
-        results_data.push(["Corner Reaction Force", results.cornerReactionForce.toFixed(2), "N"])
+        results_data.push(["Maximum Corner Reaction", results.cornerReactionForce.toFixed(2), "N"])
       }
 
       // Check if table will fit on current page
@@ -1961,41 +2058,115 @@ export default function BeamLoadCalculator() {
         yOffset = 30
       }
 
-      // Add table manually
+      // Add table manually with improved styling
       const tableStartY = yOffset
       const colWidths = [contentWidth * 0.5, contentWidth * 0.3, contentWidth * 0.2]
       let currentY = tableStartY
 
-      // Table header
+      // Table header with better styling
       pdf.setFillColor(41, 128, 185)
       pdf.setTextColor(255, 255, 255)
       pdf.setFont("helvetica", "bold")
+      pdf.setFontSize(10)
       pdf.rect(margin, currentY, contentWidth, rowHeight, "F")
-      pdf.text(results_data[0][0], margin + 2, currentY + 5)
-      pdf.text(results_data[0][1], margin + colWidths[0] + 2, currentY + 5)
-      pdf.text(results_data[0][2], margin + colWidths[0] + colWidths[1] + 2, currentY + 5)
+      pdf.text(results_data[0][0], margin + 3, currentY + 6)
+      pdf.text(results_data[0][1], margin + colWidths[0] + 3, currentY + 6)
+      pdf.text(results_data[0][2], margin + colWidths[0] + colWidths[1] + 3, currentY + 6)
       currentY += rowHeight
 
-      // Table body
+      // Table body with improved formatting
       pdf.setTextColor(0, 0, 0)
       pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(9)
       results_data.slice(1).forEach((row, index) => {
+        // Alternate row colors
         if (index % 2 === 0) {
-          pdf.setFillColor(245, 245, 245)
+          pdf.setFillColor(250, 250, 250)
+          pdf.rect(margin, currentY, contentWidth, rowHeight, "F")
+        } else {
+          pdf.setFillColor(255, 255, 255)
           pdf.rect(margin, currentY, contentWidth, rowHeight, "F")
         }
 
-        pdf.text(row[0], margin + 2, currentY + 5)
-        pdf.text(row[1], margin + colWidths[0] + 2, currentY + 5)
-        pdf.text(row[2], margin + colWidths[0] + colWidths[1] + 2, currentY + 5)
+        // Highlight important values
+        if (row[0].includes("Safety Factor")) {
+          pdf.setFont("helvetica", "bold")
+          const safetyFactor = parseFloat(row[1])
+          if (safetyFactor < 1.5) {
+            pdf.setTextColor(200, 0, 0) // Red for low safety factor
+          } else if (safetyFactor < 2.0) {
+            pdf.setTextColor(255, 140, 0) // Orange for moderate safety factor
+          } else {
+            pdf.setTextColor(0, 150, 0) // Green for good safety factor
+          }
+        } else {
+          pdf.setFont("helvetica", "normal")
+          pdf.setTextColor(0, 0, 0)
+        }
+
+        pdf.text(row[0], margin + 3, currentY + 6)
+        pdf.text(row[1], margin + colWidths[0] + 3, currentY + 6)
+        pdf.text(row[2], margin + colWidths[0] + colWidths[1] + 3, currentY + 6)
         currentY += rowHeight
       })
 
       // Add border around table
-      pdf.setDrawColor(0, 0, 0)
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.5)
       pdf.rect(margin, tableStartY, contentWidth, currentY - tableStartY)
+      
+      // Reset text color
+      pdf.setTextColor(0, 0, 0)
 
       yOffset = currentY + 20
+
+      // Add corner reactions table for Base Frame
+      if (analysisType === "Base Frame" && results.cornerReactions) {
+        if (yOffset + 50 > pageHeight - 60) {
+          pdf.addPage()
+          yOffset = 30
+        }
+        
+        yOffset += 10
+        yOffset = addSubsectionHeader("Corner Reaction Forces", margin, yOffset)
+        yOffset += 5
+        
+        const cornerTableStartY = yOffset
+        const cornerRowHeight = 8
+        const cornerColWidths = [contentWidth * 0.25, contentWidth * 0.25, contentWidth * 0.25, contentWidth * 0.25]
+        
+        // Table header
+        pdf.setFillColor(41, 128, 185)
+        pdf.setTextColor(255, 255, 255)
+        pdf.setFont("helvetica", "bold")
+        pdf.setFontSize(9)
+        pdf.rect(margin, cornerTableStartY, contentWidth, cornerRowHeight, "F")
+        pdf.text("R1 (Top-Left)", margin + 2, cornerTableStartY + 6)
+        pdf.text("R2 (Top-Right)", margin + cornerColWidths[0] + 2, cornerTableStartY + 6)
+        pdf.text("R3 (Bottom-Left)", margin + cornerColWidths[0] + cornerColWidths[1] + 2, cornerTableStartY + 6)
+        pdf.text("R4 (Bottom-Right)", margin + cornerColWidths[0] + cornerColWidths[1] + cornerColWidths[2] + 2, cornerTableStartY + 6)
+        
+        let cornerY = cornerTableStartY + cornerRowHeight
+        pdf.setTextColor(0, 0, 0)
+        pdf.setFont("helvetica", "normal")
+        pdf.setFontSize(9)
+        
+        // Data row
+        pdf.setFillColor(250, 250, 250)
+        pdf.rect(margin, cornerY, contentWidth, cornerRowHeight, "F")
+        pdf.text(`${results.cornerReactions.R1.toFixed(2)} N`, margin + 2, cornerY + 6)
+        pdf.text(`${results.cornerReactions.R2.toFixed(2)} N`, margin + cornerColWidths[0] + 2, cornerY + 6)
+        pdf.text(`${results.cornerReactions.R3.toFixed(2)} N`, margin + cornerColWidths[0] + cornerColWidths[1] + 2, cornerY + 6)
+        pdf.text(`${results.cornerReactions.R4.toFixed(2)} N`, margin + cornerColWidths[0] + cornerColWidths[1] + cornerColWidths[2] + 2, cornerY + 6)
+        cornerY += cornerRowHeight
+        
+        // Table border
+        pdf.setDrawColor(200, 200, 200)
+        pdf.setLineWidth(0.5)
+        pdf.rect(margin, cornerTableStartY, contentWidth, cornerY - cornerTableStartY)
+        
+        yOffset = cornerY + 15
+      }
 
       // 4. STRUCTURAL DIAGRAMS
       pdf.addPage()
@@ -2018,9 +2189,11 @@ export default function BeamLoadCalculator() {
         const diagramWidth = 200;
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
-        // Light gray background
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+        // Professional diagram frame
+        pdf.setFillColor(250, 250, 250);
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD");
         // Add image with error handling
         try {
           pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
@@ -2043,8 +2216,10 @@ export default function BeamLoadCalculator() {
         const diagramWidth = 200;
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+        pdf.setFillColor(250, 250, 250);
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD");
         try {
           pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
         } catch (error) {
@@ -2118,8 +2293,10 @@ export default function BeamLoadCalculator() {
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+        pdf.setFillColor(250, 250, 250);
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD");
         try {
           pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
         } catch (error) {
@@ -2149,8 +2326,10 @@ export default function BeamLoadCalculator() {
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+        pdf.setFillColor(250, 250, 250);
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD");
         try {
           pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
         } catch (error) {
@@ -2180,8 +2359,10 @@ export default function BeamLoadCalculator() {
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
-        pdf.setFillColor(240, 240, 240);
-        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
+        pdf.setFillColor(250, 250, 250);
+        pdf.setDrawColor(200, 200, 200);
+        pdf.setLineWidth(0.5);
+        pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD");
         try {
           pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
         } catch (error) {
@@ -2197,13 +2378,37 @@ export default function BeamLoadCalculator() {
         yOffset += 10;
       }
 
-      // Add page numbers to all pages
+      // Add professional headers and footers to all pages
       const pageCount = pdf.getNumberOfPages()
       for (let i = 1; i <= pageCount; i++) {
         pdf.setPage(i)
+        
+        // Header line
+        pdf.setDrawColor(41, 128, 185)
+        pdf.setLineWidth(0.5)
+        pdf.line(margin, 25, pageWidth - margin, 25)
+        
+        // Header text
+        pdf.setFontSize(8)
+        pdf.setFont("helvetica", "normal")
+        pdf.setTextColor(100, 100, 100)
+        pdf.text("Structural Load Analysis Report", margin, 20)
+        pdf.text(analysisType, pageWidth - margin, 20, { align: "right" })
+        
+        // Footer line
+        pdf.setDrawColor(200, 200, 200)
+        pdf.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20)
+        
+        // Footer text
         pdf.setFontSize(8)
         pdf.setFont("helvetica", "italic")
-        pdf.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 8, { align: "center" })
+        pdf.setTextColor(100, 100, 100)
+        pdf.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 12, { align: "center" })
+        pdf.text("Confidential - For Internal Use Only", margin, pageHeight - 12)
+        pdf.text(`Generated: ${now.toLocaleDateString()}`, pageWidth - margin, pageHeight - 12, { align: "right" })
+        
+        // Reset text color
+        pdf.setTextColor(0, 0, 0)
       }
 
       // Save the PDF
