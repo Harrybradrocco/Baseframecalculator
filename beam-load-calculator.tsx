@@ -10,7 +10,7 @@ import type React from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { HelpCircle, Calculator, Settings, Loader2, FileText, BarChart3, Ruler, Package, Mail, Download, Info } from "lucide-react"
+import { HelpCircle, Calculator, Settings, Loader2, FileText, BarChart3, Ruler, Package, Mail, Download, Info, Tag } from "lucide-react"
 import { jsPDF } from "jspdf"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -59,6 +59,7 @@ interface Load {
   loadLength?: number // Length of distributed load component (mm) - for baseframe
   loadWidth?: number // Width of distributed load component (mm) - for baseframe
   unit?: "N" | "kg" // Add unit field
+  name?: string // Name/label for the load to display in diagrams
 }
 
 // Validation helper functions
@@ -355,6 +356,11 @@ const BeamDiagram: React.FC<BeamDiagramProps> = ({ beamLength, leftSupport, righ
               <text x={loadStartX} y={beamY - 80} textAnchor="middle" fontSize="11" fill="red" fontWeight="bold">
                 {load.magnitude.toFixed(0)} N
               </text>
+              {load.name && (
+                <text x={loadStartX} y={beamY - 95} textAnchor="middle" fontSize="9" fill="red" fontStyle="italic">
+                  {load.name}
+                </text>
+              )}
             </g>
           )
         } else {
@@ -386,6 +392,18 @@ const BeamDiagram: React.FC<BeamDiagramProps> = ({ beamLength, leftSupport, righ
               >
                 {load.magnitude.toFixed(0)} N/m
               </text>
+              {load.name && (
+                <text
+                  x={(loadStartX + loadEndX) / 2}
+                  y={beamY - 75}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="red"
+                  fontStyle="italic"
+                >
+                  {load.name}
+                </text>
+              )}
             </g>
           )
         }
@@ -534,6 +552,21 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
               >
                 {loadValue.toFixed(0)}N
               </text>
+              {load.name && (
+                <text
+                  x={
+                    Math.max(margin, validateNumber(x, margin)) +
+                    validatePositive(Math.min(loadLengthMM * scaleX, validFrameLength * scaleX), 10) / 2
+                  }
+                  y={Math.max(margin + 30, validateNumber(y, margin + 30)) - 22}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="red"
+                  fontStyle="italic"
+                >
+                  {load.name}
+                </text>
+              )}
             </g>
           );
         } else {
@@ -546,6 +579,11 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
               <text x={x} y={y - 30} textAnchor="middle" fontSize="10" fill="red" fontWeight="bold">
                 {load.magnitude.toFixed(0)}N
               </text>
+              {load.name && (
+                <text x={x} y={y - 44} textAnchor="middle" fontSize="9" fill="red" fontStyle="italic">
+                  {load.name}
+                </text>
+              )}
             </g>
           )
         }
@@ -749,6 +787,21 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
               >
                 {loadValue.toFixed(0)}N
               </text>
+              {load.name && (
+                <text
+                  x={
+                    Math.max(margin, validateNumber(x, margin)) +
+                    validatePositive(Math.min(loadLengthMM * scaleX, validFrameLength * scaleX), 10) / 2
+                  }
+                  y={Math.max(margin + 40, validateNumber(y, margin + 40)) - 22}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="red"
+                  fontStyle="italic"
+                >
+                  {load.name}
+                </text>
+              )}
             </g>
           );
         } else {
@@ -1045,10 +1098,10 @@ export default function BeamLoadCalculator() {
   // Reset loads when analysis type changes
   useEffect(() => {
     if (analysisType === "Simple Beam") {
-      setLoads([{ type: "Point Load", magnitude: 1000, startPosition: 500, unit: "N" }])
+      setLoads([{ type: "Point Load", magnitude: 1000, startPosition: 500, unit: "N", name: "Load 1" }])
     } else {
       // For base frame, start first load at position 0
-      setLoads([{ type: "Distributed Load", magnitude: 1000, startPosition: 0, loadLength: 500, loadWidth: frameWidth, unit: "N" }])
+      setLoads([{ type: "Distributed Load", magnitude: 1000, startPosition: 0, loadLength: 500, loadWidth: frameWidth, unit: "N", name: "Load 1" }])
     }
   }, [analysisType, frameWidth])
 
@@ -1091,10 +1144,10 @@ export default function BeamLoadCalculator() {
       
       const newLoad: Load =
         analysisType === "Simple Beam"
-          ? { type: "Point Load", magnitude: 1000, startPosition: nextStartPosition, unit: "N" }
+          ? { type: "Point Load", magnitude: 1000, startPosition: nextStartPosition, unit: "N", name: `Load ${loads.length + 1}` }
           : analysisType === "Base Frame"
-          ? { type: "Distributed Load", magnitude: 1000, startPosition: nextStartPosition, loadLength: 500, loadWidth: frameWidth, unit: "N" }
-          : { type: "Distributed Load", magnitude: 1000, startPosition: nextStartPosition, area: 0.5, unit: "N" }
+          ? { type: "Distributed Load", magnitude: 1000, startPosition: nextStartPosition, loadLength: 500, loadWidth: frameWidth, unit: "N", name: `Load ${loads.length + 1}` }
+          : { type: "Distributed Load", magnitude: 1000, startPosition: nextStartPosition, area: 0.5, unit: "N", name: `Load ${loads.length + 1}` }
       setLoads([...loads, newLoad])
     }
   }
@@ -2761,6 +2814,20 @@ export default function BeamLoadCalculator() {
           <CardContent className="grid gap-4 p-6">
             {loads.map((load, index) => (
               <div key={index} className="border border-gray-200 p-4 rounded-lg bg-gray-50">
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <Label htmlFor={`load-name-${index}`} className="flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-gray-500" />
+                    Load Name
+                  </Label>
+                  <Input
+                    type="text"
+                    id={`load-name-${index}`}
+                    value={load.name || `Load ${index + 1}`}
+                    onChange={(e) => updateLoad(index, { name: e.target.value })}
+                    placeholder={`Load ${index + 1}`}
+                    className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <Label htmlFor={`load-type-${index}`} className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 text-gray-500" />
