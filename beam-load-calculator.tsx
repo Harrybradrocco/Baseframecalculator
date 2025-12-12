@@ -2069,14 +2069,18 @@ export default function BeamLoadCalculator() {
 
       // Helper to capture a DOM node as PNG using svgToPngDataUrl
       const captureSVGAsImage = async (svgId: string, fallbackWidth: number, fallbackHeight: number) => {
-        // Wait a bit to ensure diagrams are rendered
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait longer to ensure diagrams are fully rendered
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         const svg = document.getElementById(svgId) as SVGSVGElement | null;
         if (!svg) {
           console.error(`SVG with id '${svgId}' not found in DOM`);
           throw new Error(`SVG with id '${svgId}' not found in DOM. Make sure the chart is visible on the page before downloading the PDF.`);
         }
+        
+        // Scroll element into view to ensure it's rendered
+        svg.scrollIntoView({ behavior: 'instant', block: 'center' });
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Check if SVG is visible
         const rect = svg.getBoundingClientRect();
@@ -2089,8 +2093,18 @@ export default function BeamLoadCalculator() {
         if (svg.hasAttribute("width")) width = Number(svg.getAttribute("width")) || fallbackWidth;
         if (svg.hasAttribute("height")) height = Number(svg.getAttribute("height")) || fallbackHeight;
         
+        // Use actual rendered dimensions if available
+        if (rect.width > 0 && rect.height > 0) {
+          width = rect.width;
+          height = rect.height;
+        }
+        
         try {
-          return await svgToPngDataUrl(svg, width, height);
+          const dataUrl = await svgToPngDataUrl(svg, width, height);
+          if (!dataUrl || dataUrl.length === 0) {
+            throw new Error("Empty data URL returned from SVG conversion");
+          }
+          return dataUrl;
         } catch (error) {
           console.error(`Failed to convert SVG ${svgId} to PNG:`, error);
           throw error;
@@ -2180,158 +2194,58 @@ export default function BeamLoadCalculator() {
       // Declare yOffset at the top before any use
       let yOffset = 0;
 
-      // Add Table of Contents page
-      pdf.addPage()
-      yOffset = 30
-      yOffset = addSectionHeader("TABLE OF CONTENTS", margin, yOffset)
-      yOffset += 15
-
-      // TOC entries with dotted lines
-      pdf.setFontSize(11)
-      pdf.setDrawColor(200, 200, 200)
-      pdf.setLineWidth(0.3)
-      
-      const tocEntries = [
-        { title: "1. CONFIGURATION", page: "4" },
-        { title: "2. LOADING CONDITIONS", page: "5" },
-        { title: "3. ANALYSIS RESULTS", page: "6" },
-        { title: "4. STRUCTURAL DIAGRAMS", page: "7" },
-        { title: "5. FORCE DIAGRAMS", page: "8" },
-      ]
-      
-      tocEntries.forEach((entry, index) => {
-        pdf.setFont("helvetica", "bold")
-        pdf.text(entry.title, margin, yOffset)
-        
-        // Dotted line
-        const dotStartX = margin + pdf.getTextWidth(entry.title) + 5
-        const dotEndX = pageWidth - margin - 20
-        const dotY = yOffset - 2
-        for (let x = dotStartX; x < dotEndX; x += 2) {
-          pdf.circle(x, dotY, 0.3, "F")
-        }
-        
-        pdf.setFont("helvetica", "normal")
-        pdf.text(entry.page, pageWidth - margin - 10, yOffset, { align: "right" })
-        yOffset += 18
-      })
-
+      // Skip Table of Contents to reduce clutter - go straight to content
       // Add a new page for the first section
       pdf.addPage()
       yOffset = 30
 
-      // 1. CONFIGURATION SECTION
+      // 1. CONFIGURATION SECTION - Simplified
       yOffset = addSectionHeader("1. CONFIGURATION", margin, yOffset)
-      yOffset += 5
+      yOffset += 10
 
+      // Create a compact table for configuration
+      pdf.setFontSize(10)
+      pdf.setFont("helvetica", "bold")
+      pdf.text("Property", margin, yOffset)
+      pdf.text("Value", margin + contentWidth * 0.5, yOffset)
+      yOffset += 8
+      
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.3)
+      pdf.line(margin, yOffset - 2, margin + contentWidth, yOffset - 2)
+      
+      pdf.setFont("helvetica", "normal")
+      pdf.setFontSize(9)
+      
       if (analysisType === "Simple Beam") {
-        yOffset = addSubsectionHeader("Beam Properties:", margin, yOffset)
-        yOffset = addWrappedText(`• Length: ${beamLength} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-        yOffset = addWrappedText(
-          `• Left Support Position: ${leftSupport} mm`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
-        yOffset = addWrappedText(
-          `• Right Support Position: ${rightSupport} mm`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
-        yOffset = addWrappedText(
-          `• Span Length: ${rightSupport - leftSupport} mm`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
+        pdf.text("Beam Length", margin, yOffset)
+        pdf.text(`${beamLength} mm`, margin + contentWidth * 0.5, yOffset)
+        yOffset += 7
+        pdf.text("Span Length", margin, yOffset)
+        pdf.text(`${rightSupport - leftSupport} mm`, margin + contentWidth * 0.5, yOffset)
+        yOffset += 7
       } else {
-        yOffset = addSubsectionHeader("Frame Properties:", margin, yOffset)
-        yOffset = addWrappedText(`• Frame Length: ${frameLength} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-        yOffset = addWrappedText(`• Frame Width: ${frameWidth} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-        yOffset = addWrappedText(
-          `• Total Members: 4 (2 Longitudinal + 2 Transverse)`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
+        pdf.text("Frame Length", margin, yOffset)
+        pdf.text(`${frameLength} mm`, margin + contentWidth * 0.5, yOffset)
+        yOffset += 7
+        pdf.text("Frame Width", margin, yOffset)
+        pdf.text(`${frameWidth} mm`, margin + contentWidth * 0.5, yOffset)
+        yOffset += 7
       }
-
-      yOffset += 5
-      yOffset = addSubsectionHeader("Cross Section:", margin, yOffset)
-      yOffset = addWrappedText(`• Type: ${beamCrossSection}`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-
-      if (beamCrossSection === "Rectangular") {
-        yOffset = addWrappedText(`• Width: ${width} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-        yOffset = addWrappedText(`• Height: ${height} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-      } else if (beamCrossSection === "I Beam" || beamCrossSection === "C Channel") {
-        yOffset = addWrappedText(`• Height (H): ${height} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-        yOffset = addWrappedText(
-          `• Flange Width (bf): ${flangeWidth} mm`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
-        yOffset = addWrappedText(
-          `• Flange Thickness (tf): ${flangeThickness} mm`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
-        yOffset = addWrappedText(
-          `• Web Thickness (tw): ${webThickness} mm`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
-      } else if (beamCrossSection === "Circular") {
-        yOffset = addWrappedText(`• Diameter: ${diameter} mm`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-      }
-
-      yOffset += 5
-      yOffset = addSubsectionHeader("Material:", margin, yOffset)
-      yOffset = addWrappedText(`• Type: ${material}`, margin + 10, yOffset, contentWidth - 10, 6, 10)
-
+      
+      pdf.text("Cross Section", margin, yOffset)
+      pdf.text(beamCrossSection, margin + contentWidth * 0.5, yOffset)
+      yOffset += 7
+      
+      pdf.text("Material", margin, yOffset)
+      pdf.text(material, margin + contentWidth * 0.5, yOffset)
+      yOffset += 7
+      
       const materialProps = material === "Custom" ? customMaterial : standardMaterials[material]
       if (materialProps.yieldStrength > 0) {
-        yOffset = addWrappedText(
-          `• Yield Strength: ${materialProps.yieldStrength} MPa`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
-        yOffset = addWrappedText(
-          `• Elastic Modulus: ${materialProps.elasticModulus} GPa`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
-        yOffset = addWrappedText(
-          `• Density: ${materialProps.density} kg/m³`,
-          margin + 10,
-          yOffset,
-          contentWidth - 10,
-          6,
-          10,
-        )
+        pdf.text("Yield Strength", margin, yOffset)
+        pdf.text(`${materialProps.yieldStrength} MPa`, margin + contentWidth * 0.5, yOffset)
+        yOffset += 7
       }
 
       // 2. LOADING CONDITIONS
@@ -2435,27 +2349,23 @@ export default function BeamLoadCalculator() {
         yOffset = 30
       }
 
-      // 3. ANALYSIS RESULTS
+      // 3. ANALYSIS RESULTS - Simplified
       yOffset += 15
       yOffset = addSectionHeader("3. ANALYSIS RESULTS", margin, yOffset)
-      yOffset += 5
+      yOffset += 10
 
-      // Create a results table
+      // Create a simplified results table with only key metrics
       const results_data = [
         ["Parameter", "Value", "Unit"],
-        ["Maximum Shear Force", results.maxShearForce.toFixed(2), "N"],
-        ["Maximum Bending Moment", results.maxBendingMoment.toFixed(2), "N·m"],
-        ["Maximum Normal Stress", results.maxNormalStress.toFixed(2), "MPa"],
-        ["Maximum Shear Stress", results.maxShearStress.toFixed(2), "MPa"],
+        ["Maximum Shear Force", results.maxShearForce.toFixed(1), "N"],
+        ["Maximum Bending Moment", results.maxBendingMoment.toFixed(1), "N·m"],
+        ["Maximum Normal Stress", results.maxNormalStress.toFixed(1), "MPa"],
         ["Safety Factor", results.safetyFactor.toFixed(2), "-"],
-        ["Maximum Deflection", (results.maxDeflection * 1000).toFixed(3), "mm"],
-        ["Moment of Inertia", results.momentOfInertia.toExponential(3), "m⁴"],
-        ["Section Modulus", results.sectionModulus.toExponential(3), "m³"],
-        ["Structure Weight", frameWeight.toFixed(2), "N"],
+        ["Maximum Deflection", (results.maxDeflection * 1000).toFixed(2), "mm"],
       ]
 
       if (analysisType === "Base Frame") {
-        results_data.push(["Maximum Corner Reaction", results.cornerReactionForce.toFixed(2), "N"])
+        results_data.push(["Maximum Corner Reaction", results.cornerReactionForce.toFixed(1), "N"])
       }
 
       // Check if table will fit on current page
@@ -2622,7 +2532,15 @@ export default function BeamLoadCalculator() {
             yOffset += diagramHeight + 15;
           }
         } else {
+          console.log("Capturing frame structure diagram...");
+          // Scroll to make sure diagram is visible
+          const frameSvg = document.getElementById("frame-structure-diagram");
+          if (frameSvg) {
+            frameSvg.scrollIntoView({ behavior: 'instant', block: 'center' });
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
           structureImg = await captureSVGAsImage("frame-structure-diagram", 500, 450)
+          console.log("Frame diagram captured:", structureImg ? "Success" : "Failed");
           if (!structureImg) {
             console.warn("Failed to capture frame structure diagram, using placeholder");
             yOffset = addWrappedText("[Frame Structure Diagram - Unable to capture]", margin, yOffset, contentWidth, 6, 10);
@@ -2678,8 +2596,15 @@ export default function BeamLoadCalculator() {
             yOffset = 30;
           }
           yOffset = addSubsectionHeader("4.2 Corner Loads Analysis", margin, yOffset)
-          yOffset += 15
+          yOffset += 10
+          console.log("Capturing corner loads diagram...");
+          // Scroll to make sure diagram is visible
+          if (svg) {
+            svg.scrollIntoView({ behavior: 'instant', block: 'center' });
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
           const cornerImg = await captureSVGAsImage("corner-loads-diagram", origWidth, origHeight)
+          console.log("Corner loads diagram captured:", cornerImg ? "Success" : "Failed");
           if (cornerImg) {
             const diagramX = (pageWidth - diagramWidth) / 2;
             pdf.setFillColor(250, 250, 250);
@@ -2715,20 +2640,24 @@ export default function BeamLoadCalculator() {
 
       // Shear Force Diagram
       yOffset = addSubsectionHeader("5.1 Shear Force Diagram", margin, yOffset)
-      yOffset += 15
+      yOffset += 10
       try {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Wait for rendering
+        console.log("Capturing shear force diagram...");
         const container = document.getElementById("shear-force-diagram");
         if (!container) throw new Error("Shear force diagram container not found in DOM");
+        container.scrollIntoView({ behavior: 'instant', block: 'center' });
+        await new Promise(resolve => setTimeout(resolve, 500));
         const svg = container.querySelector("svg") as SVGSVGElement | null;
         if (!svg) throw new Error("Shear force diagram SVG not found in DOM");
-        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
-        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
+        const rect = svg.getBoundingClientRect();
+        const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248);
+        const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300);
         const aspect = origHeight / origWidth;
         const diagramWidth = 180;
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
+        console.log("Shear force diagram captured:", img ? "Success" : "Failed");
         if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG");
         pdf.setFillColor(250, 250, 250);
         pdf.setDrawColor(200, 200, 200);
@@ -2752,20 +2681,24 @@ export default function BeamLoadCalculator() {
 
       // Bending Moment Diagram
       yOffset = addSubsectionHeader("5.2 Bending Moment Diagram", margin, yOffset)
-      yOffset += 15
+      yOffset += 10
       try {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Wait for rendering
+        console.log("Capturing bending moment diagram...");
         const container = document.getElementById("bending-moment-diagram");
         if (!container) throw new Error("Bending moment diagram container not found in DOM");
+        container.scrollIntoView({ behavior: 'instant', block: 'center' });
+        await new Promise(resolve => setTimeout(resolve, 500));
         const svg = container.querySelector("svg") as SVGSVGElement | null;
         if (!svg) throw new Error("Bending moment diagram SVG not found in DOM");
-        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
-        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
+        const rect = svg.getBoundingClientRect();
+        const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248);
+        const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300);
         const aspect = origHeight / origWidth;
         const diagramWidth = 180;
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
+        console.log("Bending moment diagram captured:", img ? "Success" : "Failed");
         if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG");
         pdf.setFillColor(250, 250, 250);
         pdf.setDrawColor(200, 200, 200);
@@ -2789,20 +2722,24 @@ export default function BeamLoadCalculator() {
 
       // Deflection Diagram
       yOffset = addSubsectionHeader("5.3 Deflection Diagram", margin, yOffset)
-      yOffset += 15
+      yOffset += 10
       try {
-        await new Promise(resolve => setTimeout(resolve, 100)); // Wait for rendering
+        console.log("Capturing deflection diagram...");
         const container = document.getElementById("deflection-diagram");
         if (!container) throw new Error("Deflection diagram container not found in DOM");
+        container.scrollIntoView({ behavior: 'instant', block: 'center' });
+        await new Promise(resolve => setTimeout(resolve, 500));
         const svg = container.querySelector("svg") as SVGSVGElement | null;
         if (!svg) throw new Error("Deflection diagram SVG not found in DOM");
-        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248;
-        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300;
+        const rect = svg.getBoundingClientRect();
+        const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248);
+        const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300);
         const aspect = origHeight / origWidth;
         const diagramWidth = 180;
         const diagramHeight = Math.round(diagramWidth * aspect);
         const diagramX = (pageWidth - diagramWidth) / 2;
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
+        console.log("Deflection diagram captured:", img ? "Success" : "Failed");
         if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG");
         pdf.setFillColor(250, 250, 250);
         pdf.setDrawColor(200, 200, 200);
