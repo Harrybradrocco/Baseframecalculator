@@ -1027,7 +1027,6 @@ export default function BeamLoadCalculator() {
     totalAppliedLoad: 0,
   })
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
-  const [deflectionData, setDeflectionData] = useState<Array<{ x: number; y: number }>>([])
 
   // Helper function to convert kg to N
   const kgToN = (kg: number): number => kg * 9.81
