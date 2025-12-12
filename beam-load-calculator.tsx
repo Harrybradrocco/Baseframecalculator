@@ -1197,6 +1197,7 @@ export default function BeamLoadCalculator() {
   const [leftSupport, setLeftSupport] = useState(0)
   const [rightSupport, setRightSupport] = useState(1000)
   const [loads, setLoads] = useState<Load[]>([{ type: "Point Load", magnitude: 1000, startPosition: 500, unit: "N" }])
+  const [sections, setSections] = useState<Section[]>([])
   const [shearForceData, setShearForceData] = useState<Array<{ x: number; y: number }>>([])
   const [bendingMomentData, setBendingMomentData] = useState<Array<{ x: number; y: number }>>([])
   const [deflectionData, setDeflectionData] = useState<Array<{ x: number; y: number }>>([])
@@ -3760,8 +3761,8 @@ export default function BeamLoadCalculator() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <div id="shear-force-diagram" style={{ width: "100%", height: 250 }}>
-                <ResponsiveContainer>
+              <div id="shear-force-diagram" style={{ width: "100%", height: 250, minWidth: 0, minHeight: 250 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   {shearForceData.length > 0 && (
                     <AreaChart data={shearForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -3786,8 +3787,8 @@ export default function BeamLoadCalculator() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <div id="bending-moment-diagram" style={{ width: "100%", height: 250 }}>
-                <ResponsiveContainer>
+              <div id="bending-moment-diagram" style={{ width: "100%", height: 250, minWidth: 0, minHeight: 250 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   {bendingMomentData.length > 0 && (
                     <AreaChart data={bendingMomentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -3812,8 +3813,8 @@ export default function BeamLoadCalculator() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <div id="deflection-diagram" style={{ width: "100%", height: 250 }}>
-                <ResponsiveContainer>
+              <div id="deflection-diagram" style={{ width: "100%", height: 250, minWidth: 0, minHeight: 250 }}>
+                <ResponsiveContainer width="100%" height="100%">
                   {deflectionData.length > 0 && (
                     <AreaChart data={deflectionData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" />
