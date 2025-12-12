@@ -48,30 +48,62 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
         strokeWidth="3"
       />
 
-      {/* Corner reaction forces - Simplified to prevent clutter */}
+      {/* Corner reaction forces - Positioned to prevent overlap */}
       {[
-        { x: frameRect.x, y: frameRect.y, label: "R1", reaction: cornerReactions?.R1 || cornerReactionForce },
-        { x: frameRect.x + frameRect.width, y: frameRect.y, label: "R2", reaction: cornerReactions?.R2 || cornerReactionForce },
-        { x: frameRect.x, y: frameRect.y + frameRect.height, label: "R3", reaction: cornerReactions?.R3 || cornerReactionForce },
-        { x: frameRect.x + frameRect.width, y: frameRect.y + frameRect.height, label: "R4", reaction: cornerReactions?.R4 || cornerReactionForce },
+        { 
+          x: frameRect.x, 
+          y: frameRect.y, 
+          label: "R1", 
+          reaction: cornerReactions?.R1 || cornerReactionForce,
+          offsetX: -25, // Position to the left for top-left corner
+          offsetY: -55
+        },
+        { 
+          x: frameRect.x + frameRect.width, 
+          y: frameRect.y, 
+          label: "R2", 
+          reaction: cornerReactions?.R2 || cornerReactionForce,
+          offsetX: 25, // Position to the right for top-right corner
+          offsetY: -55
+        },
+        { 
+          x: frameRect.x, 
+          y: frameRect.y + frameRect.height, 
+          label: "R3", 
+          reaction: cornerReactions?.R3 || cornerReactionForce,
+          offsetX: -25, // Position to the left for bottom-left corner
+          offsetY: 15
+        },
+        { 
+          x: frameRect.x + frameRect.width, 
+          y: frameRect.y + frameRect.height, 
+          label: "R4", 
+          reaction: cornerReactions?.R4 || cornerReactionForce,
+          offsetX: 25, // Position to the right for bottom-right corner
+          offsetY: 15
+        },
       ].map((corner, index) => (
         <g key={index}>
-          {/* Reaction force arrow - shorter to prevent overlap */}
+          {/* Reaction force arrow */}
           <line
             x1={corner.x}
-            y1={corner.y - 45}
+            y1={corner.y + (corner.offsetY < 0 ? -35 : 0)}
             x2={corner.x}
             y2={corner.y}
             stroke="blue"
             strokeWidth="2.5"
             markerEnd="url(#blueArrowhead)"
           />
-          {/* Simplified label - only show corner label and primary value */}
-          <text x={corner.x} y={corner.y - 52} textAnchor="middle" fontSize="13" fill="blue" fontWeight="bold">
-            {corner.label}
-          </text>
-          <text x={corner.x} y={corner.y - 38} textAnchor="middle" fontSize="11" fill="blue" fontWeight="bold">
-            {corner.reaction.toFixed(0)} N
+          {/* Corner label and value - positioned to avoid overlap */}
+          <text 
+            x={corner.x + corner.offsetX} 
+            y={corner.y + corner.offsetY} 
+            textAnchor="middle" 
+            fontSize="12" 
+            fill="blue" 
+            fontWeight="bold"
+          >
+            {corner.label}: {corner.reaction.toFixed(0)} N
           </text>
         </g>
       ))}
@@ -133,14 +165,17 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
                 stroke="red"
                 strokeWidth="2"
               />
-              {/* Simplified load label - only show if there's space */}
-              {loadLengthMM * scaleX > 30 && (
+              {/* Load label - positioned inside the box to avoid overlap */}
+              {loadLengthMM * scaleX > 40 && (
                 <text
                   x={
                     Math.max(margin, validateNumber(x, margin)) +
                     validatePositive(Math.min(loadLengthMM * scaleX, validFrameLength * scaleX), 10) / 2
                   }
-                  y={Math.max(margin + 40, validateNumber(y, margin + 40)) - 5}
+                  y={
+                    Math.max(margin + 40, validateNumber(y, margin + 40)) +
+                    validatePositive(Math.min(loadWidthMM * scaleY, validFrameWidth * scaleY), 10) / 2 + 4
+                  }
                   textAnchor="middle"
                   fontSize="9"
                   fill="red"
