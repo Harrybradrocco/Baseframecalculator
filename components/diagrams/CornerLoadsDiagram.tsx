@@ -20,8 +20,8 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
   cornerReactions,
   sections = [],
 }) => {
-  const svgWidth = 500
-  const svgHeight = 550 // Increased height to accommodate corner reaction table and prevent overlap
+  const svgWidth = 600 // Increased width to accommodate horizontal text format
+  const svgHeight = 500 // Reduced height since table is now single line
   const margin = 80
 
   const validFrameLength = validatePositive(frameLength, 1000)
@@ -218,9 +218,9 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           {/* Table background */}
           <rect
             x={margin}
-            y={frameRect.y + frameRect.height + 15}
+            y={frameRect.y + frameRect.height + 20}
             width={svgWidth - 2 * margin}
-            height={75}
+            height={50}
             fill="#f8f9fa"
             stroke="#dee2e6"
             strokeWidth="1"
@@ -230,7 +230,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           {/* Table header */}
           <text
             x={svgWidth / 2}
-            y={frameRect.y + frameRect.height + 30}
+            y={frameRect.y + frameRect.height + 35}
             textAnchor="middle"
             fontSize="11"
             fontWeight="bold"
@@ -239,65 +239,32 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
             Corner Reactions
           </text>
           
-          {/* Corner labels row */}
+          {/* Corner reactions in requested format: R1 -> N xx | kgf -> xx | lbf ->xx */}
           {[
-            { label: "R1", x: margin + 30 },
-            { label: "R2", x: margin + (svgWidth - 2 * margin) / 3 + 30 },
-            { label: "R3", x: margin + (2 * (svgWidth - 2 * margin)) / 3 + 30 },
-            { label: "R4", x: svgWidth - margin - 30 },
+            { label: "R1", x: margin + 50 },
+            { label: "R2", x: margin + (svgWidth - 2 * margin) / 3 + 50 },
+            { label: "R3", x: margin + (2 * (svgWidth - 2 * margin)) / 3 + 50 },
+            { label: "R4", x: svgWidth - margin - 50 },
           ].map((corner, idx) => {
             const reactionKey = `R${idx + 1}` as keyof typeof cornerReactions
             const reaction = cornerReactions[reactionKey] || 0
             const kgf = nToKg(reaction)
             const lbf = nToLbs(reaction)
             
+            // Format: R1 -> N xx | kgf -> xx | lbf ->xx
+            const formattedText = `${corner.label} -> N ${reaction.toFixed(0)} | kgf ${kgf.toFixed(1)} | lbf ${lbf.toFixed(1)}`
+            
             return (
-              <g key={corner.label}>
-                {/* Corner label */}
-                <text
-                  x={corner.x}
-                  y={frameRect.y + frameRect.height + 45}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="bold"
-                  fill="#2563eb"
-                >
-                  {corner.label}
-                </text>
-                
-                {/* N value */}
-                <text
-                  x={corner.x}
-                  y={frameRect.y + frameRect.height + 58}
-                  textAnchor="middle"
-                  fontSize="9"
-                  fill="#333"
-                >
-                  N: {reaction.toFixed(0)}
-                </text>
-                
-                {/* kgf value */}
-                <text
-                  x={corner.x}
-                  y={frameRect.y + frameRect.height + 70}
-                  textAnchor="middle"
-                  fontSize="9"
-                  fill="#333"
-                >
-                  kgf: {kgf.toFixed(1)}
-                </text>
-                
-                {/* lbf value */}
-                <text
-                  x={corner.x}
-                  y={frameRect.y + frameRect.height + 82}
-                  textAnchor="middle"
-                  fontSize="9"
-                  fill="#333"
-                >
-                  lbf: {lbf.toFixed(1)}
-                </text>
-              </g>
+              <text
+                key={corner.label}
+                x={corner.x}
+                y={frameRect.y + frameRect.height + 52}
+                textAnchor="middle"
+                fontSize="8"
+                fill="#333"
+              >
+                {formattedText}
+              </text>
             )
           })}
         </g>
