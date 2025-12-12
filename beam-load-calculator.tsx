@@ -1165,10 +1165,17 @@ export default function BeamLoadCalculator() {
               <div id="shear-force-diagram" style={{ width: "100%", height: 250, minWidth: 0, minHeight: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   {shearForceData.length > 0 && (
-                    <AreaChart data={shearForceData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <AreaChart data={shearForceData} margin={{ top: 10, right: 10, left: 50, bottom: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
-                      <YAxis label={{ value: "Shear Force (N)", angle: -90, position: "insideLeft", offset: 10 }} />
+                      <XAxis 
+                        dataKey="x" 
+                        label={{ value: "Position (mm)", position: "bottom", offset: 5, style: { textAnchor: "middle" } }}
+                        tick={{ fontSize: 10 }}
+                      />
+                      <YAxis 
+                        label={{ value: "Shear Force (N)", angle: -90, position: "left", offset: 0, style: { textAnchor: "middle" } }}
+                        tick={{ fontSize: 10 }}
+                      />
                       <Tooltip />
                       <Area type="monotone" dataKey="y" stroke="#8884d8" fill="#8884d8" />
                       <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
@@ -1191,10 +1198,17 @@ export default function BeamLoadCalculator() {
               <div id="bending-moment-diagram" style={{ width: "100%", height: 250, minWidth: 0, minHeight: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   {bendingMomentData.length > 0 && (
-                    <AreaChart data={bendingMomentData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <AreaChart data={bendingMomentData} margin={{ top: 10, right: 10, left: 50, bottom: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
-                      <YAxis label={{ value: "Bending Moment (N·m)", angle: -90, position: "insideLeft", offset: 10 }} />
+                      <XAxis 
+                        dataKey="x" 
+                        label={{ value: "Position (mm)", position: "bottom", offset: 5, style: { textAnchor: "middle" } }}
+                        tick={{ fontSize: 10 }}
+                      />
+                      <YAxis 
+                        label={{ value: "Bending Moment (N·m)", angle: -90, position: "left", offset: 0, style: { textAnchor: "middle" } }}
+                        tick={{ fontSize: 10 }}
+                      />
                       <Tooltip />
                       <Area type="monotone" dataKey="y" stroke="#82ca9d" fill="#82ca9d" />
                       <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
@@ -1217,10 +1231,17 @@ export default function BeamLoadCalculator() {
               <div id="deflection-diagram" style={{ width: "100%", height: 250, minWidth: 0, minHeight: 250 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   {deflectionData.length > 0 && (
-                    <AreaChart data={deflectionData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <AreaChart data={deflectionData} margin={{ top: 10, right: 10, left: 50, bottom: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="x" label={{ value: "Position (mm)", position: "insideBottom", offset: -5 }} />
-                      <YAxis label={{ value: "Deflection (mm)", angle: -90, position: "insideLeft", offset: 10 }} />
+                      <XAxis 
+                        dataKey="x" 
+                        label={{ value: "Position (mm)", position: "bottom", offset: 5, style: { textAnchor: "middle" } }}
+                        tick={{ fontSize: 10 }}
+                      />
+                      <YAxis 
+                        label={{ value: "Deflection (mm)", angle: -90, position: "left", offset: 0, style: { textAnchor: "middle" } }}
+                        tick={{ fontSize: 10 }}
+                      />
                       <Tooltip />
                       <Area type="monotone" dataKey="y" stroke="#ff7300" fill="#ff7300" />
                       <ReferenceLine y={0} stroke="#000" strokeDasharray="3 3" />
