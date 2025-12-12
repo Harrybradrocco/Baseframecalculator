@@ -633,6 +633,7 @@ interface CornerLoadsDiagramProps {
   frameWidth: number
   loads: Load[]
   cornerReactionForce: number
+  cornerReactions?: { R1: number; R2: number; R3: number; R4: number }
 }
 
 const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
@@ -640,6 +641,7 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
   frameWidth,
   loads,
   cornerReactionForce,
+  cornerReactions,
 }) => {
   const svgWidth = 500
   const svgHeight = 450
@@ -672,10 +674,10 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
 
       {/* Corner reaction forces */}
       {[
-        { x: frameRect.x, y: frameRect.y, label: "R1" },
-        { x: frameRect.x + frameRect.width, y: frameRect.y, label: "R2" },
-        { x: frameRect.x, y: frameRect.y + frameRect.height, label: "R3" },
-        { x: frameRect.x + frameRect.width, y: frameRect.y + frameRect.height, label: "R4" },
+        { x: frameRect.x, y: frameRect.y, label: "R1", reaction: cornerReactions?.R1 || cornerReactionForce },
+        { x: frameRect.x + frameRect.width, y: frameRect.y, label: "R2", reaction: cornerReactions?.R2 || cornerReactionForce },
+        { x: frameRect.x, y: frameRect.y + frameRect.height, label: "R3", reaction: cornerReactions?.R3 || cornerReactionForce },
+        { x: frameRect.x + frameRect.width, y: frameRect.y + frameRect.height, label: "R4", reaction: cornerReactions?.R4 || cornerReactionForce },
       ].map((corner, index) => (
         <g key={index}>
           {/* Reaction force arrow */}
@@ -693,7 +695,7 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
             {corner.label}
           </text>
           <text x={corner.x} y={corner.y - 32} textAnchor="middle" fontSize="10" fill="blue">
-            {cornerReactionForce.toFixed(0)}N
+            {corner.reaction.toFixed(0)}N
           </text>
         </g>
       ))}
@@ -1023,6 +1025,7 @@ export default function BeamLoadCalculator() {
     momentOfInertia: 0,
     sectionModulus: 0,
     cornerReactionForce: 0,
+    cornerReactions: { R1: 0, R2: 0, R3: 0, R4: 0 }, // Individual corner reactions
     maxDeflection: 0,
     totalAppliedLoad: 0,
   })
@@ -1166,6 +1169,8 @@ export default function BeamLoadCalculator() {
     let frameWeightN = 0
     let totalBeams = 0
     let loadPerBeam = 0
+    let cornerReactionForce = 0
+    let cornerReactions = { R1: 0, R2: 0, R3: 0, R4: 0 }
 
     if (analysisType === "Simple Beam") {
       // Single beam analysis
@@ -1247,23 +1252,99 @@ export default function BeamLoadCalculator() {
         maxBendingMoment = Math.max(maxBendingMoment, Math.abs(moment))
       }
     } else {
-      // Base frame analysis - Fixed calculations
+      // Base frame analysis - Calculate corner reactions based on load positions
       totalBeams = 4
       const framePerimeter = 2 * (frameLengthM + frameWidthM)
       frameWeightN = beamVolume * framePerimeter * beamDensity * 9.81
 
-      // For base frame, loads are distributed to all 4 members
-      // Each member carries 1/4 of the total load as uniform load
-      loadPerBeam = totalAppliedLoad / 4
+      // Initialize corner reactions (R1=top-left, R2=top-right, R3=bottom-left, R4=bottom-right)
+      let R1 = 0, R2 = 0, R3 = 0, R4 = 0
+
+      // Distribute each load to corners based on its position
+      loads.forEach((load) => {
+        const magnitudeInN = getLoadMagnitudeInN(load)
+        let loadWeight = 0
+        let loadCenterX = 0
+        let loadCenterY = frameWidthM / 2 // Default to center in width
+
+        if (load.type === "Distributed Load") {
+          let loadLengthMM = 0
+          let loadWidthMM = 0
+          
+          if (load.loadLength && load.loadWidth) {
+            // For baseframe: use length and width
+            loadLengthMM = validatePositive(load.loadLength, 100)
+            loadWidthMM = validatePositive(load.loadWidth, 100)
+            loadWeight = magnitudeInN * (loadLengthMM * loadWidthMM) / 1_000_000
+            // Load center position
+            loadCenterX = (load.startPosition + loadLengthMM / 2) / 1000 // Convert to meters
+            loadCenterY = (frameWidth - loadWidthMM / 2) / 1000 // Convert to meters, from top
+          } else if (load.area) {
+            // For simple beam compatibility: assume square load
+            const sideLengthMM = Math.sqrt(validatePositive(load.area, 1)) * 1000
+            loadWeight = magnitudeInN * load.area
+            loadCenterX = (load.startPosition + sideLengthMM / 2) / 1000
+            loadCenterY = frameWidthM / 2
+          } else {
+            return // Skip invalid load
+          }
+        } else if (load.type === "Point Load") {
+          loadWeight = magnitudeInN
+          loadCenterX = load.startPosition / 1000
+          loadCenterY = frameWidthM / 2
+        } else if (load.type === "Uniform Load" && load.endPosition) {
+          const loadLengthM = (load.endPosition - load.startPosition) / 1000
+          loadWeight = magnitudeInN * loadLengthM
+          loadCenterX = (load.startPosition + load.endPosition) / 2000
+          loadCenterY = frameWidthM / 2
+        } else {
+          return // Skip invalid load
+        }
+
+        // Distribute load to corners based on position using area method
+        // Each corner gets load proportional to the area of rectangle from that corner to load center
+        // R1 (top-left): area from (0,0) to (loadCenterX, loadCenterY)
+        const areaR1 = loadCenterX * loadCenterY
+        // R2 (top-right): area from (loadCenterX, 0) to (frameLengthM, loadCenterY)
+        const areaR2 = (frameLengthM - loadCenterX) * loadCenterY
+        // R3 (bottom-left): area from (0, loadCenterY) to (loadCenterX, frameWidthM)
+        const areaR3 = loadCenterX * (frameWidthM - loadCenterY)
+        // R4 (bottom-right): area from (loadCenterX, loadCenterY) to (frameLengthM, frameWidthM)
+        const areaR4 = (frameLengthM - loadCenterX) * (frameWidthM - loadCenterY)
+
+        const totalArea = frameLengthM * frameWidthM
+
+        if (totalArea > 0) {
+          R1 += loadWeight * (areaR1 / totalArea)
+          R2 += loadWeight * (areaR2 / totalArea)
+          R3 += loadWeight * (areaR3 / totalArea)
+          R4 += loadWeight * (areaR4 / totalArea)
+        }
+      })
+
+      // Add frame weight distributed equally to all corners
+      const frameWeightPerCorner = frameWeightN / 4
+      R1 += frameWeightPerCorner
+      R2 += frameWeightPerCorner
+      R3 += frameWeightPerCorner
+      R4 += frameWeightPerCorner
 
       // Calculate critical beam length (longer of the two sides)
       const criticalBeamLength = Math.max(frameLengthM, frameWidthM)
 
-      // For simply supported beam with uniform load:
-      // Max shear = wL/2, Max moment = wL²/8
+      // For analysis, use the maximum corner reaction
+      const maxCornerReaction = Math.max(R1, R2, R3, R4)
+      
+      // Calculate equivalent uniform load for critical beam analysis
+      // This is used for stress calculations
+      loadPerBeam = totalAppliedLoad / 4
       const uniformLoadPerMeter = loadPerBeam / criticalBeamLength
       maxShearForce = (uniformLoadPerMeter * criticalBeamLength) / 2
       maxBendingMoment = (uniformLoadPerMeter * Math.pow(criticalBeamLength, 2)) / 8
+
+      // Store individual corner reactions
+      cornerReactionForce = maxCornerReaction
+      cornerReactions = { R1, R2, R3, R4 }
     }
 
     setFrameWeight(Number(frameWeightN.toFixed(2)))
@@ -1328,7 +1409,13 @@ export default function BeamLoadCalculator() {
       loadPerBeam: Number(loadPerBeam.toFixed(2)),
       momentOfInertia: Number(momentOfInertia.toFixed(6)),
       sectionModulus: Number(sectionModulus.toFixed(6)),
-      cornerReactionForce: Number((maxShearForce * Math.sqrt(2)).toFixed(2)),
+      cornerReactionForce: Number(cornerReactionForce.toFixed(2)),
+      cornerReactions: {
+        R1: Number(cornerReactions.R1.toFixed(2)),
+        R2: Number(cornerReactions.R2.toFixed(2)),
+        R3: Number(cornerReactions.R3.toFixed(2)),
+        R4: Number(cornerReactions.R4.toFixed(2)),
+      },
       maxDeflection: Number(maxDeflection.toFixed(6)),
       totalAppliedLoad: Number(totalAppliedLoad.toFixed(2)),
     })
@@ -2824,6 +2911,7 @@ export default function BeamLoadCalculator() {
                 frameWidth={frameWidth}
                 loads={loads}
                 cornerReactionForce={results.cornerReactionForce}
+                cornerReactions={results.cornerReactions}
               />
             </CardContent>
           </Card>
