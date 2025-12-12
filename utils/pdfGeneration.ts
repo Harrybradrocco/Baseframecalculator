@@ -662,33 +662,59 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
     const container = document.getElementById("shear-force-diagram")
     if (!container) throw new Error("Shear force diagram container not found in DOM")
     container.scrollIntoView({ behavior: 'instant', block: 'center' })
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 800)) // Increased wait time for Recharts to render
     const svg = container.querySelector("svg") as SVGSVGElement | null
-    if (!svg) throw new Error("Shear force diagram SVG not found in DOM")
-    const rect = svg.getBoundingClientRect()
-    const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248)
-    const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300)
-    const aspect = origHeight / origWidth
-    const diagramWidth = 180
-    const diagramHeight = Math.round(diagramWidth * aspect)
-    const diagramX = (pageWidth - diagramWidth) / 2
-    const img = await svgToPngDataUrl(svg, origWidth, origHeight)
-    console.log("Shear force diagram captured:", img ? "Success" : "Failed")
-    if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
-    pdf.setFillColor(250, 250, 250)
-    pdf.setDrawColor(200, 200, 200)
-    pdf.setLineWidth(0.5)
-    pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
-    try {
-      pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-    } catch (error) {
-      console.warn("Failed to add diagram image to PDF:", error)
-      // Fallback: try with reduced size if image is too large
-      const fallbackWidth = diagramWidth * 0.8
-      const fallbackHeight = diagramHeight * 0.8
-      pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+    if (!svg) {
+      // Try alternative: look for SVG in nested elements
+      const nestedSvg = container.querySelector("div > svg") as SVGSVGElement | null
+      if (!nestedSvg) throw new Error("Shear force diagram SVG not found in DOM")
+      const rect = nestedSvg.getBoundingClientRect()
+      const origWidth = rect.width > 0 ? rect.width : 1248
+      const origHeight = rect.height > 0 ? rect.height : 300
+      const aspect = origHeight / origWidth
+      const diagramWidth = 180
+      const diagramHeight = Math.round(diagramWidth * aspect)
+      const diagramX = (pageWidth - diagramWidth) / 2
+      const img = await svgToPngDataUrl(nestedSvg, origWidth, origHeight)
+      if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
+      pdf.setFillColor(250, 250, 250)
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.5)
+      pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
+      try {
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
+      } catch (error) {
+        console.warn("Failed to add diagram image to PDF:", error)
+        const fallbackWidth = diagramWidth * 0.8
+        const fallbackHeight = diagramHeight * 0.8
+        pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+      }
+      yOffset += diagramHeight + 15
+    } else {
+      const rect = svg.getBoundingClientRect()
+      const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248)
+      const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300)
+      const aspect = origHeight / origWidth
+      const diagramWidth = 180
+      const diagramHeight = Math.round(diagramWidth * aspect)
+      const diagramX = (pageWidth - diagramWidth) / 2
+      const img = await svgToPngDataUrl(svg, origWidth, origHeight)
+      console.log("Shear force diagram captured:", img ? "Success" : "Failed")
+      if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
+      pdf.setFillColor(250, 250, 250)
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.5)
+      pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
+      try {
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
+      } catch (error) {
+        console.warn("Failed to add diagram image to PDF:", error)
+        const fallbackWidth = diagramWidth * 0.8
+        const fallbackHeight = diagramHeight * 0.8
+        pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+      }
+      yOffset += diagramHeight + 15
     }
-    yOffset += diagramHeight + 15
   } catch (err) {
     console.error("Error capturing shear force diagram:", err)
     yOffset = addWrappedText(`[Shear Force Diagram Error: ${err instanceof Error ? err.message : 'Could not be captured'}]`, margin, yOffset, contentWidth, 6, 10)
@@ -703,33 +729,58 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
     const container = document.getElementById("bending-moment-diagram")
     if (!container) throw new Error("Bending moment diagram container not found in DOM")
     container.scrollIntoView({ behavior: 'instant', block: 'center' })
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 800)) // Increased wait time
     const svg = container.querySelector("svg") as SVGSVGElement | null
-    if (!svg) throw new Error("Bending moment diagram SVG not found in DOM")
-    const rect = svg.getBoundingClientRect()
-    const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248)
-    const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300)
-    const aspect = origHeight / origWidth
-    const diagramWidth = 180
-    const diagramHeight = Math.round(diagramWidth * aspect)
-    const diagramX = (pageWidth - diagramWidth) / 2
-    const img = await svgToPngDataUrl(svg, origWidth, origHeight)
-    console.log("Bending moment diagram captured:", img ? "Success" : "Failed")
-    if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
-    pdf.setFillColor(250, 250, 250)
-    pdf.setDrawColor(200, 200, 200)
-    pdf.setLineWidth(0.5)
-    pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
-    try {
-      pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-    } catch (error) {
-      console.warn("Failed to add diagram image to PDF:", error)
-      // Fallback: try with reduced size if image is too large
-      const fallbackWidth = diagramWidth * 0.8
-      const fallbackHeight = diagramHeight * 0.8
-      pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+    if (!svg) {
+      const nestedSvg = container.querySelector("div > svg") as SVGSVGElement | null
+      if (!nestedSvg) throw new Error("Bending moment diagram SVG not found in DOM")
+      const rect = nestedSvg.getBoundingClientRect()
+      const origWidth = rect.width > 0 ? rect.width : 1248
+      const origHeight = rect.height > 0 ? rect.height : 300
+      const aspect = origHeight / origWidth
+      const diagramWidth = 180
+      const diagramHeight = Math.round(diagramWidth * aspect)
+      const diagramX = (pageWidth - diagramWidth) / 2
+      const img = await svgToPngDataUrl(nestedSvg, origWidth, origHeight)
+      if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
+      pdf.setFillColor(250, 250, 250)
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.5)
+      pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
+      try {
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
+      } catch (error) {
+        console.warn("Failed to add diagram image to PDF:", error)
+        const fallbackWidth = diagramWidth * 0.8
+        const fallbackHeight = diagramHeight * 0.8
+        pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+      }
+      yOffset += diagramHeight + 15
+    } else {
+      const rect = svg.getBoundingClientRect()
+      const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248)
+      const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300)
+      const aspect = origHeight / origWidth
+      const diagramWidth = 180
+      const diagramHeight = Math.round(diagramWidth * aspect)
+      const diagramX = (pageWidth - diagramWidth) / 2
+      const img = await svgToPngDataUrl(svg, origWidth, origHeight)
+      console.log("Bending moment diagram captured:", img ? "Success" : "Failed")
+      if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
+      pdf.setFillColor(250, 250, 250)
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.5)
+      pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
+      try {
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
+      } catch (error) {
+        console.warn("Failed to add diagram image to PDF:", error)
+        const fallbackWidth = diagramWidth * 0.8
+        const fallbackHeight = diagramHeight * 0.8
+        pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+      }
+      yOffset += diagramHeight + 15
     }
-    yOffset += diagramHeight + 15
   } catch (err) {
     console.error("Error capturing bending moment diagram:", err)
     yOffset = addWrappedText(`[Bending Moment Diagram Error: ${err instanceof Error ? err.message : 'Could not be captured'}]`, margin, yOffset, contentWidth, 6, 10)
@@ -744,33 +795,58 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
     const container = document.getElementById("deflection-diagram")
     if (!container) throw new Error("Deflection diagram container not found in DOM")
     container.scrollIntoView({ behavior: 'instant', block: 'center' })
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 800)) // Increased wait time
     const svg = container.querySelector("svg") as SVGSVGElement | null
-    if (!svg) throw new Error("Deflection diagram SVG not found in DOM")
-    const rect = svg.getBoundingClientRect()
-    const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248)
-    const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300)
-    const aspect = origHeight / origWidth
-    const diagramWidth = 180
-    const diagramHeight = Math.round(diagramWidth * aspect)
-    const diagramX = (pageWidth - diagramWidth) / 2
-    const img = await svgToPngDataUrl(svg, origWidth, origHeight)
-    console.log("Deflection diagram captured:", img ? "Success" : "Failed")
-    if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
-    pdf.setFillColor(250, 250, 250)
-    pdf.setDrawColor(200, 200, 200)
-    pdf.setLineWidth(0.5)
-    pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
-    try {
-      pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
-    } catch (error) {
-      console.warn("Failed to add diagram image to PDF:", error)
-      // Fallback: try with reduced size if image is too large
-      const fallbackWidth = diagramWidth * 0.8
-      const fallbackHeight = diagramHeight * 0.8
-      pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+    if (!svg) {
+      const nestedSvg = container.querySelector("div > svg") as SVGSVGElement | null
+      if (!nestedSvg) throw new Error("Deflection diagram SVG not found in DOM")
+      const rect = nestedSvg.getBoundingClientRect()
+      const origWidth = rect.width > 0 ? rect.width : 1248
+      const origHeight = rect.height > 0 ? rect.height : 300
+      const aspect = origHeight / origWidth
+      const diagramWidth = 180
+      const diagramHeight = Math.round(diagramWidth * aspect)
+      const diagramX = (pageWidth - diagramWidth) / 2
+      const img = await svgToPngDataUrl(nestedSvg, origWidth, origHeight)
+      if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
+      pdf.setFillColor(250, 250, 250)
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.5)
+      pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
+      try {
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
+      } catch (error) {
+        console.warn("Failed to add diagram image to PDF:", error)
+        const fallbackWidth = diagramWidth * 0.8
+        const fallbackHeight = diagramHeight * 0.8
+        pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+      }
+      yOffset += diagramHeight + 15
+    } else {
+      const rect = svg.getBoundingClientRect()
+      const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 1248)
+      const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 300)
+      const aspect = origHeight / origWidth
+      const diagramWidth = 180
+      const diagramHeight = Math.round(diagramWidth * aspect)
+      const diagramX = (pageWidth - diagramWidth) / 2
+      const img = await svgToPngDataUrl(svg, origWidth, origHeight)
+      console.log("Deflection diagram captured:", img ? "Success" : "Failed")
+      if (!img || img.length === 0) throw new Error("Failed to convert SVG to PNG")
+      pdf.setFillColor(250, 250, 250)
+      pdf.setDrawColor(200, 200, 200)
+      pdf.setLineWidth(0.5)
+      pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "FD")
+      try {
+        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight)
+      } catch (error) {
+        console.warn("Failed to add diagram image to PDF:", error)
+        const fallbackWidth = diagramWidth * 0.8
+        const fallbackHeight = diagramHeight * 0.8
+        pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight)
+      }
+      yOffset += diagramHeight + 15
     }
-    yOffset += diagramHeight + 15
   } catch (err) {
     console.error("Error capturing deflection diagram:", err)
     yOffset = addWrappedText(`[Deflection Diagram Error: ${err instanceof Error ? err.message : 'Could not be captured'}]`, margin, yOffset, contentWidth, 6, 10)

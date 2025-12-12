@@ -14,6 +14,12 @@ export const getLoadMagnitudeInN = (load: Load): number => {
   return load.magnitude // Default to N
 }
 
+// Convert N to kg
+export const nToKg = (n: number): number => n / 9.81
+
+// Convert N to lbs
+export const nToLbs = (n: number): number => n / 4.44822
+
 // Convert section weight to N
 export const convertSectionWeightToN = (weight: number, unit: "N" | "kg" | "lbs"): number => {
   if (unit === "kg") {

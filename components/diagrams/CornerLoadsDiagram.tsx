@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Load, Section } from "../../types"
 import { validateNumber, validatePositive } from "../../utils/validation"
+import { nToKg, nToLbs } from "../../utils/conversions"
 
 interface CornerLoadsDiagramProps {
   frameLength: number
@@ -20,7 +21,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
   sections = [],
 }) => {
   const svgWidth = 500
-  const svgHeight = 450
+  const svgHeight = 500 // Increased height to accommodate corner reaction table
   const margin = 80
 
   const validFrameLength = validatePositive(frameLength, 1000)
@@ -210,6 +211,97 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           <polygon points="0 0, 10 3.5, 0 7" fill="red" />
         </marker>
       </defs>
+
+      {/* Corner reactions table below diagram */}
+      {cornerReactions && (
+        <g>
+          {/* Table background */}
+          <rect
+            x={margin}
+            y={frameRect.y + frameRect.height + 20}
+            width={svgWidth - 2 * margin}
+            height={80}
+            fill="#f8f9fa"
+            stroke="#dee2e6"
+            strokeWidth="1"
+            rx="4"
+          />
+          
+          {/* Table header */}
+          <text
+            x={svgWidth / 2}
+            y={frameRect.y + frameRect.height + 35}
+            textAnchor="middle"
+            fontSize="11"
+            fontWeight="bold"
+            fill="#333"
+          >
+            Corner Reactions
+          </text>
+          
+          {/* Corner labels row */}
+          {[
+            { label: "R1", x: margin + 30 },
+            { label: "R2", x: margin + (svgWidth - 2 * margin) / 3 + 30 },
+            { label: "R3", x: margin + (2 * (svgWidth - 2 * margin)) / 3 + 30 },
+            { label: "R4", x: svgWidth - margin - 30 },
+          ].map((corner, idx) => {
+            const reactionKey = `R${idx + 1}` as keyof typeof cornerReactions
+            const reaction = cornerReactions[reactionKey] || 0
+            const kgf = nToKg(reaction)
+            const lbf = nToLbs(reaction)
+            
+            return (
+              <g key={corner.label}>
+                {/* Corner label */}
+                <text
+                  x={corner.x}
+                  y={frameRect.y + frameRect.height + 50}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="bold"
+                  fill="#2563eb"
+                >
+                  {corner.label}
+                </text>
+                
+                {/* N value */}
+                <text
+                  x={corner.x}
+                  y={frameRect.y + frameRect.height + 65}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="#333"
+                >
+                  N: {reaction.toFixed(0)}
+                </text>
+                
+                {/* kgf value */}
+                <text
+                  x={corner.x}
+                  y={frameRect.y + frameRect.height + 78}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="#333"
+                >
+                  kgf: {kgf.toFixed(1)}
+                </text>
+                
+                {/* lbf value */}
+                <text
+                  x={corner.x}
+                  y={frameRect.y + frameRect.height + 91}
+                  textAnchor="middle"
+                  fontSize="9"
+                  fill="#333"
+                >
+                  lbf: {lbf.toFixed(1)}
+                </text>
+              </g>
+            )
+          })}
+        </g>
+      )}
 
       {/* Simplified dimension labels */}
       <text x={svgWidth / 2} y={svgHeight - 10} textAnchor="middle" fontSize="11" fill="#666">
