@@ -50,6 +50,17 @@ const standardMaterials = {
   },
 } as const
 
+interface Section {
+  id: string
+  startPosition: number // mm
+  endPosition: number // mm
+  casingWeight: number // Total casing weight for this section
+  casingWeightUnit: "N" | "kg" | "lbs"
+  primaryLoad: number // Primary load for this section (distributed evenly)
+  primaryLoadUnit: "N" | "kg" | "lbs"
+  name?: string // Optional section name
+}
+
 interface Load {
   type: "Point Load" | "Uniform Load" | "Distributed Load"
   magnitude: number
@@ -60,6 +71,7 @@ interface Load {
   loadWidth?: number // Width of distributed load component (mm) - for baseframe
   unit?: "N" | "kg" | "lbs" // Add unit field
   name?: string // Name/label for the load to display in diagrams
+  sectionId?: string // Optional: associate load with a section
 }
 
 // Validation helper functions
@@ -430,13 +442,25 @@ const BeamDiagram: React.FC<BeamDiagramProps> = ({ beamLength, leftSupport, righ
   )
 }
 
+interface Section {
+  id: string
+  startPosition: number // mm
+  endPosition: number // mm
+  casingWeight: number // Total casing weight for this section
+  casingWeightUnit: "N" | "kg" | "lbs"
+  primaryLoad: number // Primary load for this section (distributed evenly)
+  primaryLoadUnit: "N" | "kg" | "lbs"
+  name?: string // Optional section name
+}
+
 interface FrameDiagramProps {
   frameLength: number
   frameWidth: number
   loads: Load[]
+  sections?: Section[]
 }
 
-const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, loads }) => {
+const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, loads, sections = [] }) => {
   const svgWidth = 500
   const svgHeight = 450
   const margin = 60
@@ -502,6 +526,65 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
         stroke="red"
         strokeWidth="3"
       />
+
+      {/* Section dividers */}
+      {sections.map((section, index) => {
+        const dividerX = margin + section.endPosition * scaleX
+        const sectionLength = section.endPosition - section.startPosition
+        const sectionCenterX = margin + (section.startPosition + sectionLength / 2) * scaleX
+        
+        return (
+          <g key={section.id}>
+            {/* Vertical divider line */}
+            <line
+              x1={dividerX}
+              y1={frameRect.y - 20}
+              x2={dividerX}
+              y2={frameRect.y + frameRect.height + 5}
+              stroke="#666"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+            />
+            {/* Section label with arrow */}
+            <line
+              x1={sectionCenterX}
+              y1={frameRect.y - 25}
+              x2={sectionCenterX}
+              y2={frameRect.y - 15}
+              stroke="#333"
+              strokeWidth="2"
+              markerEnd="url(#arrowhead-section)"
+            />
+            <text
+              x={sectionCenterX}
+              y={frameRect.y - 30}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#333"
+              fontWeight="bold"
+            >
+              {section.name || `Section ${index + 1}`}
+            </text>
+            {/* Section length label */}
+            <text
+              x={sectionCenterX}
+              y={frameRect.y + frameRect.height + 20}
+              textAnchor="middle"
+              fontSize="10"
+              fill="#666"
+            >
+              {sectionLength.toFixed(0)}mm
+            </text>
+          </g>
+        )
+      })}
+
+      {/* Arrow marker for section labels */}
+      <defs>
+        <marker id="arrowhead-section" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <polygon points="0 0, 8 4, 0 8" fill="#333" />
+        </marker>
+      </defs>
 
       {/* Load indicators */}
       {loads.map((load, index) => {
@@ -672,6 +755,7 @@ interface CornerLoadsDiagramProps {
   loads: Load[]
   cornerReactionForce: number
   cornerReactions?: { R1: number; R2: number; R3: number; R4: number }
+  sections?: Section[]
 }
 
 const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
@@ -680,6 +764,7 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
   loads,
   cornerReactionForce,
   cornerReactions,
+  sections = [],
 }) => {
   const svgWidth = 500
   const svgHeight = 450
@@ -743,6 +828,58 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           </text>
         </g>
       ))}
+
+      {/* Section dividers */}
+      {sections.map((section, index) => {
+        const dividerX = margin + section.endPosition * scaleX
+        const sectionLength = section.endPosition - section.startPosition
+        const sectionCenterX = margin + (section.startPosition + sectionLength / 2) * scaleX
+        
+        return (
+          <g key={section.id}>
+            {/* Vertical divider line */}
+            <line
+              x1={dividerX}
+              y1={frameRect.y - 20}
+              x2={dividerX}
+              y2={frameRect.y + frameRect.height + 5}
+              stroke="#666"
+              strokeWidth="2"
+              strokeDasharray="5,5"
+            />
+            {/* Section label with arrow */}
+            <line
+              x1={sectionCenterX}
+              y1={frameRect.y - 25}
+              x2={sectionCenterX}
+              y2={frameRect.y - 15}
+              stroke="#333"
+              strokeWidth="2"
+              markerEnd="url(#arrowhead-section-corner)"
+            />
+            <text
+              x={sectionCenterX}
+              y={frameRect.y - 30}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#333"
+              fontWeight="bold"
+            >
+              {section.name || `Section ${index + 1}`}
+            </text>
+            {/* Section length label */}
+            <text
+              x={sectionCenterX}
+              y={frameRect.y + frameRect.height + 20}
+              textAnchor="middle"
+              fontSize="10"
+              fill="#666"
+            >
+              {sectionLength.toFixed(0)}mm
+            </text>
+          </g>
+        )
+      })}
 
       {/* Applied loads */}
       {loads.map((load, index) => {
@@ -1202,6 +1339,44 @@ export default function BeamLoadCalculator() {
     )
   }
 
+  // Section management functions
+  const addSection = () => {
+    const maxLength = analysisType === "Simple Beam" ? beamLength : frameLength
+    let newStartPosition = 0
+    if (sections.length > 0) {
+      const lastSection = sections[sections.length - 1]
+      newStartPosition = lastSection.endPosition
+    }
+    const newSection: Section = {
+      id: `section-${Date.now()}`,
+      startPosition: newStartPosition,
+      endPosition: Math.min(newStartPosition + 1000, maxLength),
+      casingWeight: 0,
+      casingWeightUnit: "N",
+      primaryLoad: 0,
+      primaryLoadUnit: "N",
+      name: `Section ${sections.length + 1}`,
+    }
+    setSections([...sections, newSection])
+  }
+
+  const removeSection = (id: string) => {
+    setSections(sections.filter((s) => s.id !== id))
+    // Remove sectionId from loads that reference this section
+    setLoads(loads.map((load) => (load.sectionId === id ? { ...load, sectionId: undefined } : load)))
+  }
+
+  const updateSection = (id: string, updatedSection: Partial<Section>) => {
+    setSections(
+      sections.map((section) => {
+        if (section.id === id) {
+          return { ...section, ...updatedSection }
+        }
+        return section
+      }),
+    )
+  }
+
   const calculateResults = useCallback(() => {
     // Validate inputs
     const validFrameLength = validatePositive(frameLength, 1000)
@@ -1422,6 +1597,61 @@ export default function BeamLoadCalculator() {
           R3 += loadWeight * (areaR3 / totalArea)
           R4 += loadWeight * (areaR4 / totalArea)
         }
+      })
+
+      // Process section-level loads (casing weight and primary loads)
+      sections.forEach((section) => {
+        const sectionLengthM = (section.endPosition - section.startPosition) / 1000
+        const sectionStartM = section.startPosition / 1000
+        const sectionEndM = section.endPosition / 1000
+        const sectionCenterX = (sectionStartM + sectionEndM) / 2
+        const sectionCenterY = frameWidthM / 2
+
+        // Convert section casing weight to N
+        let casingWeightN = 0
+        if (section.casingWeightUnit === "kg") {
+          casingWeightN = section.casingWeight * 9.81
+        } else if (section.casingWeightUnit === "lbs") {
+          casingWeightN = section.casingWeight * 4.44822
+        } else {
+          casingWeightN = section.casingWeight
+        }
+
+        // Convert section primary load to N
+        let primaryLoadN = 0
+        if (section.primaryLoadUnit === "kg") {
+          primaryLoadN = section.primaryLoad * 9.81
+        } else if (section.primaryLoadUnit === "lbs") {
+          primaryLoadN = section.primaryLoad * 4.44822
+        } else {
+          primaryLoadN = section.primaryLoad
+        }
+
+        // Primary load is distributed evenly across the section area
+        const sectionAreaM2 = sectionLengthM * frameWidthM
+        const primaryLoadPerM2 = sectionAreaM2 > 0 ? primaryLoadN / sectionAreaM2 : 0
+
+        // Distribute casing weight and primary load to corners using area method
+        const totalSectionLoad = casingWeightN + primaryLoadN
+
+        // Use area method to distribute to corners
+        const areaR1 = (frameLengthM - sectionCenterX) * (frameWidthM - sectionCenterY)
+        const areaR2 = sectionCenterX * (frameWidthM - sectionCenterY)
+        const areaR3 = (frameLengthM - sectionCenterX) * sectionCenterY
+        const areaR4 = sectionCenterX * sectionCenterY
+        const totalArea = frameLengthM * frameWidthM
+
+        if (totalArea > 0) {
+          R1 += totalSectionLoad * (areaR1 / totalArea)
+          R2 += totalSectionLoad * (areaR2 / totalArea)
+          R3 += totalSectionLoad * (areaR3 / totalArea)
+          R4 += totalSectionLoad * (areaR4 / totalArea)
+        }
+
+        // Add primary load as distributed load to totalAppliedLoad
+        totalAppliedLoad += primaryLoadN
+        // Add casing weight to totalAppliedLoad
+        totalAppliedLoad += casingWeightN
       })
 
       // Add frame weight distributed equally to all corners
@@ -2788,6 +3018,168 @@ export default function BeamLoadCalculator() {
           </CardContent>
         </Card>
 
+        {/* Sections Management Card (for Base Frame only) */}
+        {analysisType === "Base Frame" && (
+          <Card className="shadow-sm border-gray-200">
+            <CardHeader className="pb-4 border-b border-gray-100">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Ruler className="w-5 h-5 text-purple-600" />
+                Sections Management
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Define sections with casing weight and primary loads. Section dividers will appear in diagrams.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-sm text-gray-600">
+                  {sections.length} section{sections.length !== 1 ? "s" : ""} defined
+                </span>
+                <Button onClick={addSection} variant="outline" size="sm" disabled={sections.length >= 10}>
+                  <Package className="w-4 h-4 mr-2" />
+                  Add Section
+                </Button>
+              </div>
+
+              {sections.map((section, index) => (
+                <div key={section.id} className="border border-gray-200 rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-semibold text-gray-700">{section.name || `Section ${index + 1}`}</h4>
+                    <Button
+                      onClick={() => removeSection(section.id)}
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor={`section-name-${section.id}`}>Section Name</Label>
+                      <Input
+                        id={`section-name-${section.id}`}
+                        value={section.name || ""}
+                        onChange={(e) => updateSection(section.id, { name: e.target.value })}
+                        placeholder={`Section ${index + 1}`}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`section-start-${section.id}`}>Start Position (mm)</Label>
+                      <Input
+                        type="number"
+                        id={`section-start-${section.id}`}
+                        value={section.startPosition}
+                        onChange={(e) =>
+                          updateSection(section.id, {
+                            startPosition: validateNumber(Number(e.target.value), 0),
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`section-end-${section.id}`}>End Position (mm)</Label>
+                      <Input
+                        type="number"
+                        id={`section-end-${section.id}`}
+                        value={section.endPosition}
+                        onChange={(e) =>
+                          updateSection(section.id, {
+                            endPosition: validatePositive(Number(e.target.value), section.startPosition + 100),
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`section-length-${section.id}`}>Length (mm)</Label>
+                      <Input
+                        type="number"
+                        id={`section-length-${section.id}`}
+                        value={section.endPosition - section.startPosition}
+                        disabled
+                        className="bg-gray-50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                    <div>
+                      <Label htmlFor={`section-casing-${section.id}`}>Casing Weight</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          id={`section-casing-${section.id}`}
+                          value={section.casingWeight}
+                          onChange={(e) =>
+                            updateSection(section.id, {
+                              casingWeight: validateNumber(Number(e.target.value), 0),
+                            })
+                          }
+                          className="flex-1"
+                        />
+                        <Select
+                          value={section.casingWeightUnit}
+                          onValueChange={(value) =>
+                            updateSection(section.id, { casingWeightUnit: value as "N" | "kg" | "lbs" })
+                          }
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="N">N</SelectItem>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="lbs">lbs</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor={`section-primary-${section.id}`}>Primary Load (distributed evenly)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          id={`section-primary-${section.id}`}
+                          value={section.primaryLoad}
+                          onChange={(e) =>
+                            updateSection(section.id, {
+                              primaryLoad: validateNumber(Number(e.target.value), 0),
+                            })
+                          }
+                          className="flex-1"
+                        />
+                        <Select
+                          value={section.primaryLoadUnit}
+                          onValueChange={(value) =>
+                            updateSection(section.id, { primaryLoadUnit: value as "N" | "kg" | "lbs" })
+                          }
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="N">N</SelectItem>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="lbs">lbs</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {sections.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No sections defined. Click "Add Section" to create one.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Cross-Section Dimensions Card */}
         <Card className="shadow-sm border-gray-200">
           <CardHeader className="pb-4 border-b border-gray-100">
@@ -3330,7 +3722,7 @@ export default function BeamLoadCalculator() {
             {analysisType === "Simple Beam" ? (
               <BeamDiagram beamLength={beamLength} leftSupport={leftSupport} rightSupport={rightSupport} loads={loads} />
             ) : (
-              <FrameDiagram frameLength={frameLength} frameWidth={frameWidth} loads={loads} />
+              <FrameDiagram frameLength={frameLength} frameWidth={frameWidth} loads={loads} sections={sections} />
             )}
           </CardContent>
         </Card>
@@ -3351,6 +3743,7 @@ export default function BeamLoadCalculator() {
                 loads={loads}
                 cornerReactionForce={results.cornerReactionForce}
                 cornerReactions={results.cornerReactions}
+                sections={sections}
               />
             </CardContent>
           </Card>
