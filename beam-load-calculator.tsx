@@ -55,7 +55,9 @@ interface Load {
   magnitude: number
   startPosition: number
   endPosition?: number
-  area?: number
+  area?: number // For backward compatibility and simple beam
+  loadLength?: number // Length of distributed load component (mm) - for baseframe
+  loadWidth?: number // Width of distributed load component (mm) - for baseframe
   unit?: "N" | "kg" // Add unit field
 }
 
@@ -485,20 +487,36 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
 
       {/* Load indicators */}
       {loads.map((load, index) => {
-        if (load.type === "Distributed Load" && load.area) {
-          // Convert area (m²) to side length in mm
-          const loadAreaSideMM = Math.sqrt(validatePositive(load.area, 1)) * 1000;
+        if (load.type === "Distributed Load") {
+          let loadLengthMM = 0;
+          let loadWidthMM = 0;
+          let loadArea = 0;
+          
+          if (load.loadLength && load.loadWidth) {
+            // For baseframe: use length and width directly
+            loadLengthMM = validatePositive(load.loadLength, 100);
+            loadWidthMM = validatePositive(load.loadWidth, 100);
+            loadArea = (loadLengthMM * loadWidthMM) / 1_000_000; // Convert to m²
+          } else if (load.area) {
+            // For simple beam: convert area to square side length
+            loadLengthMM = Math.sqrt(validatePositive(load.area, 1)) * 1000;
+            loadWidthMM = loadLengthMM; // Square
+            loadArea = load.area;
+          } else {
+            return null; // Skip invalid load
+          }
+          
           const loadStartPos = validateNumber(load.startPosition, 0);
-          const x = margin + loadStartPos * scaleX - (loadAreaSideMM * scaleX) / 2;
-          const y = margin + 30 + (validFrameWidth * scaleY) / 2 - (loadAreaSideMM * scaleY) / 2;
-          const loadValue = load.magnitude * load.area;
+          const x = margin + loadStartPos * scaleX - (loadLengthMM * scaleX) / 2;
+          const y = margin + 30 + (validFrameWidth * scaleY) / 2 - (loadWidthMM * scaleY) / 2;
+          const loadValue = load.magnitude * loadArea;
           return (
             <g key={index}>
               <rect
                 x={Math.max(margin, validateNumber(x, margin))}
                 y={Math.max(margin + 30, validateNumber(y, margin + 30))}
-                width={validatePositive(Math.min(loadAreaSideMM * scaleX, validFrameLength * scaleX), 10)}
-                height={validatePositive(Math.min(loadAreaSideMM * scaleY, validFrameWidth * scaleY), 10)}
+                width={validatePositive(Math.min(loadLengthMM * scaleX, validFrameLength * scaleX), 10)}
+                height={validatePositive(Math.min(loadWidthMM * scaleY, validFrameWidth * scaleY), 10)}
                 fill="rgba(255, 0, 0, 0.3)"
                 stroke="red"
                 strokeWidth="1"
@@ -506,7 +524,7 @@ const FrameDiagram: React.FC<FrameDiagramProps> = ({ frameLength, frameWidth, lo
               <text
                 x={
                   Math.max(margin, validateNumber(x, margin)) +
-                  validatePositive(Math.min(loadAreaSideMM * scaleX, validFrameLength * scaleX), 10) / 2
+                  validatePositive(Math.min(loadLengthMM * scaleX, validFrameLength * scaleX), 10) / 2
                 }
                 y={Math.max(margin + 30, validateNumber(y, margin + 30)) - 8}
                 textAnchor="middle"
@@ -682,20 +700,36 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
 
       {/* Applied loads */}
       {loads.map((load, index) => {
-        if (load.type === "Distributed Load" && load.area) {
-          // Convert area (m²) to side length in mm
-          const loadAreaSideMM = Math.sqrt(validatePositive(load.area, 1)) * 1000;
+        if (load.type === "Distributed Load") {
+          let loadLengthMM = 0;
+          let loadWidthMM = 0;
+          let loadArea = 0;
+          
+          if (load.loadLength && load.loadWidth) {
+            // For baseframe: use length and width directly
+            loadLengthMM = validatePositive(load.loadLength, 100);
+            loadWidthMM = validatePositive(load.loadWidth, 100);
+            loadArea = (loadLengthMM * loadWidthMM) / 1_000_000; // Convert to m²
+          } else if (load.area) {
+            // For simple beam: convert area to square side length
+            loadLengthMM = Math.sqrt(validatePositive(load.area, 1)) * 1000;
+            loadWidthMM = loadLengthMM; // Square
+            loadArea = load.area;
+          } else {
+            return null; // Skip invalid load
+          }
+          
           const loadStartPos = validateNumber(load.startPosition, 0);
-          const x = margin + loadStartPos * scaleX - (loadAreaSideMM * scaleX) / 2;
-          const y = margin + 40 + (validFrameWidth * scaleY) / 2 - (loadAreaSideMM * scaleY) / 2;
-          const loadValue = load.magnitude * load.area;
+          const x = margin + loadStartPos * scaleX - (loadLengthMM * scaleX) / 2;
+          const y = margin + 40 + (validFrameWidth * scaleY) / 2 - (loadWidthMM * scaleY) / 2;
+          const loadValue = load.magnitude * loadArea;
           return (
             <g key={index}>
               <rect
                 x={Math.max(margin, validateNumber(x, margin))}
                 y={Math.max(margin + 40, validateNumber(y, margin + 40))}
-                width={validatePositive(Math.min(loadAreaSideMM * scaleX, validFrameLength * scaleX), 10)}
-                height={validatePositive(Math.min(loadAreaSideMM * scaleY, validFrameWidth * scaleY), 10)}
+                width={validatePositive(Math.min(loadLengthMM * scaleX, validFrameLength * scaleX), 10)}
+                height={validatePositive(Math.min(loadWidthMM * scaleY, validFrameWidth * scaleY), 10)}
                 fill="rgba(255, 0, 0, 0.3)"
                 stroke="red"
                 strokeWidth="2"
@@ -703,7 +737,7 @@ const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
               <text
                 x={
                   Math.max(margin, validateNumber(x, margin)) +
-                  validatePositive(Math.min(loadAreaSideMM * scaleX, validFrameLength * scaleX), 10) / 2
+                  validatePositive(Math.min(loadLengthMM * scaleX, validFrameLength * scaleX), 10) / 2
                 }
                 y={Math.max(margin + 40, validateNumber(y, margin + 40)) - 8}
                 textAnchor="middle"
@@ -844,31 +878,114 @@ const BeamCrossSectionImage: React.FC<{ type: string }> = ({ type }) => {
 // Helper: Convert SVG element to PNG data URL
 async function svgToPngDataUrl(svg: SVGSVGElement, width: number, height: number): Promise<string> {
   return new Promise((resolve, reject) => {
-    const serializer = new XMLSerializer();
-    let svgString = serializer.serializeToString(svg);
-    // Add XML declaration for compatibility
-    if (!svgString.startsWith('<?xml')) {
-      svgString = '<?xml version="1.0" standalone="no"?>\r\n' + svgString;
+    try {
+      // Clone the SVG to avoid modifying the original
+      const clonedSvg = svg.cloneNode(true) as SVGSVGElement;
+      
+      // Get actual dimensions from SVG
+      const svgWidth = svg.getAttribute('width') 
+        ? parseFloat(svg.getAttribute('width')!) 
+        : svg.viewBox?.baseVal?.width || width;
+      const svgHeight = svg.getAttribute('height') 
+        ? parseFloat(svg.getAttribute('height')!) 
+        : svg.viewBox?.baseVal?.height || height;
+      
+      // Ensure cloned SVG has explicit width and height for proper rendering
+      if (!clonedSvg.hasAttribute('width')) {
+        clonedSvg.setAttribute('width', svgWidth.toString());
+      }
+      if (!clonedSvg.hasAttribute('height')) {
+        clonedSvg.setAttribute('height', svgHeight.toString());
+      }
+      
+      // Preserve viewBox if it exists
+      if (svg.viewBox?.baseVal) {
+        const viewBox = svg.viewBox.baseVal;
+        clonedSvg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+      }
+      
+      // Set preserveAspectRatio if it exists
+      if (svg.hasAttribute('preserveAspectRatio')) {
+        clonedSvg.setAttribute('preserveAspectRatio', svg.getAttribute('preserveAspectRatio')!);
+      } else {
+        clonedSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      }
+      
+      // Serialize the SVG
+      const serializer = new XMLSerializer();
+      let svgString = serializer.serializeToString(clonedSvg);
+      
+      // Remove any script tags for security
+      svgString = svgString.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+      
+      // Add XML declaration for compatibility
+      if (!svgString.startsWith('<?xml')) {
+        svgString = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n' + svgString;
+      }
+      
+      // Use a more robust encoding method
+      const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(svgBlob);
+      
+      const img = new window.Image();
+      
+      // Set a timeout to prevent hanging
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(url);
+        reject(new Error('SVG to image conversion timeout'));
+      }, 10000); // 10 second timeout
+      
+      img.onload = function () {
+        clearTimeout(timeout);
+        try {
+          // Use higher resolution for better quality (2x for retina-like quality)
+          const scale = 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = width * scale;
+          canvas.height = height * scale;
+          const ctx = canvas.getContext('2d', { 
+            willReadFrequently: false,
+            alpha: false // Opaque background for better PDF compatibility
+          });
+          
+          if (!ctx) {
+            URL.revokeObjectURL(url);
+            return reject(new Error('Canvas context not available'));
+          }
+          
+          // White background for PDF
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Enable image smoothing for better quality
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // Draw the image scaled up
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // Get the data URL
+          const dataUrl = canvas.toDataURL('image/png', 1.0); // Maximum quality
+          
+          // Clean up
+          URL.revokeObjectURL(url);
+          resolve(dataUrl);
+        } catch (error) {
+          URL.revokeObjectURL(url);
+          reject(new Error(`Failed to convert SVG to PNG: ${error instanceof Error ? error.message : 'Unknown error'}`));
+        }
+      };
+      
+      img.onerror = function (e) {
+        clearTimeout(timeout);
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load SVG as image. The SVG may contain unsupported elements or external resources.'));
+      };
+      
+      img.src = url;
+    } catch (error) {
+      reject(new Error(`SVG conversion error: ${error instanceof Error ? error.message : 'Unknown error'}`));
     }
-    const svg64 = btoa(unescape(encodeURIComponent(svgString)));
-    const image64 = 'data:image/svg+xml;base64,' + svg64;
-    const img = new window.Image();
-    img.onload = function () {
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return reject(new Error('Canvas context not available'));
-      // White background for PDF
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/png'));
-    };
-    img.onerror = function (e) {
-      reject(new Error('Failed to load SVG as image'));
-    };
-    img.src = image64;
   });
 }
 
@@ -928,15 +1045,17 @@ export default function BeamLoadCalculator() {
     if (analysisType === "Simple Beam") {
       setLoads([{ type: "Point Load", magnitude: 1000, startPosition: 500, unit: "N" }])
     } else {
-      setLoads([{ type: "Distributed Load", magnitude: 1000, startPosition: 1000, area: 0.5, unit: "N" }])
+      setLoads([{ type: "Distributed Load", magnitude: 1000, startPosition: 1000, loadLength: 500, loadWidth: frameWidth, unit: "N" }])
     }
-  }, [analysisType])
+  }, [analysisType, frameWidth])
 
   const addLoad = () => {
     if (loads.length < 10) {
       const newLoad: Load =
         analysisType === "Simple Beam"
           ? { type: "Point Load", magnitude: 1000, startPosition: beamLength / 2, unit: "N" }
+          : analysisType === "Base Frame"
+          ? { type: "Distributed Load", magnitude: 1000, startPosition: frameLength / 2, loadLength: 500, loadWidth: frameWidth, unit: "N" }
           : { type: "Distributed Load", magnitude: 1000, startPosition: frameLength / 2, area: 0.5, unit: "N" }
       setLoads([...loads, newLoad])
     }
@@ -954,8 +1073,21 @@ export default function BeamLoadCalculator() {
           if (newLoad.type === "Uniform Load" && !newLoad.endPosition) {
             newLoad.endPosition = newLoad.startPosition + 100
           }
-          if (newLoad.type === "Distributed Load" && !newLoad.area) {
-            newLoad.area = 0.5
+          if (newLoad.type === "Distributed Load") {
+            // For baseframe, use length and width; for simple beam, use area
+            if (analysisType === "Base Frame") {
+              if (!newLoad.loadLength) {
+                newLoad.loadLength = 500 // Default 500mm length
+              }
+              if (!newLoad.loadWidth) {
+                newLoad.loadWidth = frameWidth // Default to frame width
+              }
+            } else {
+              // For simple beam, use area
+              if (!newLoad.area) {
+                newLoad.area = 0.5
+              }
+            }
           }
           if (!newLoad.unit) {
             newLoad.unit = "N"
@@ -1007,9 +1139,19 @@ export default function BeamLoadCalculator() {
     let totalAppliedLoad = 0
     loads.forEach((load) => {
       const magnitudeInN = getLoadMagnitudeInN(load)
-      if (load.type === "Distributed Load" && load.area) {
+      if (load.type === "Distributed Load") {
         // For distributed loads: magnitude (N/m²) × area (m²) = total load (N)
-        totalAppliedLoad += magnitudeInN * load.area
+        let loadArea = 0
+        if (analysisType === "Base Frame" && load.loadLength && load.loadWidth) {
+          // For baseframe: use length × width
+          loadArea = (load.loadLength * load.loadWidth) / 1_000_000 // Convert mm² to m²
+        } else if (load.area) {
+          // For simple beam: use area directly
+          loadArea = load.area
+        }
+        if (loadArea > 0) {
+          totalAppliedLoad += magnitudeInN * loadArea
+        }
       } else if (load.type === "Uniform Load" && load.endPosition) {
         // For uniform loads: magnitude (N/m) × length (m) = total load (N)
         const loadLength = (load.endPosition - load.startPosition) / 1000
@@ -1793,7 +1935,16 @@ export default function BeamLoadCalculator() {
         // Light gray background
         pdf.setFillColor(240, 240, 240);
         pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
-        pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        // Add image with error handling
+        try {
+          pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        } catch (error) {
+          console.warn("Failed to add structure image to PDF:", error);
+          // Fallback: try with reduced size if image is too large
+          const fallbackWidth = diagramWidth * 0.8;
+          const fallbackHeight = diagramHeight * 0.8;
+          pdf.addImage(structureImg, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight);
+        }
         yOffset += diagramHeight + 15;
       } else {
         const svg = document.getElementById("frame-structure-diagram") as SVGSVGElement | null
@@ -1808,7 +1959,15 @@ export default function BeamLoadCalculator() {
         const diagramX = (pageWidth - diagramWidth) / 2;
         pdf.setFillColor(240, 240, 240);
         pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
-        pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        try {
+          pdf.addImage(structureImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        } catch (error) {
+          console.warn("Failed to add frame structure image to PDF:", error);
+          // Fallback: try with reduced size
+          const fallbackWidth = diagramWidth * 0.8;
+          const fallbackHeight = diagramHeight * 0.8;
+          pdf.addImage(structureImg, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight);
+        }
         yOffset += diagramHeight + 15;
       }
 
@@ -1839,7 +1998,15 @@ export default function BeamLoadCalculator() {
             const diagramX = (pageWidth - diagramWidth) / 2;
             pdf.setFillColor(240, 240, 240);
             pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
-            pdf.addImage(cornerImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+            try {
+              pdf.addImage(cornerImg, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+            } catch (error) {
+              console.warn("Failed to add corner loads image to PDF:", error);
+              // Fallback: try with reduced size
+              const fallbackWidth = diagramWidth * 0.8;
+              const fallbackHeight = diagramHeight * 0.8;
+              pdf.addImage(cornerImg, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight);
+            }
             yOffset += diagramHeight + 15;
           }
         }
@@ -1867,7 +2034,15 @@ export default function BeamLoadCalculator() {
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
         pdf.setFillColor(240, 240, 240);
         pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
-        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        try {
+          pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        } catch (error) {
+          console.warn("Failed to add diagram image to PDF:", error);
+          // Fallback: try with reduced size if image is too large
+          const fallbackWidth = diagramWidth * 0.8;
+          const fallbackHeight = diagramHeight * 0.8;
+          pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight);
+        }
         yOffset += diagramHeight + 15;
       } catch (err) {
         yOffset = addWrappedText("[Shear Force Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10);
@@ -1890,7 +2065,15 @@ export default function BeamLoadCalculator() {
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
         pdf.setFillColor(240, 240, 240);
         pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
-        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        try {
+          pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        } catch (error) {
+          console.warn("Failed to add diagram image to PDF:", error);
+          // Fallback: try with reduced size if image is too large
+          const fallbackWidth = diagramWidth * 0.8;
+          const fallbackHeight = diagramHeight * 0.8;
+          pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight);
+        }
         yOffset += diagramHeight + 15;
       } catch (err) {
         yOffset = addWrappedText("[Bending Moment Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10);
@@ -1913,7 +2096,15 @@ export default function BeamLoadCalculator() {
         const img = await svgToPngDataUrl(svg, origWidth, origHeight);
         pdf.setFillColor(240, 240, 240);
         pdf.rect(diagramX - 5, yOffset - 5, diagramWidth + 10, diagramHeight + 10, "F");
-        pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        try {
+          pdf.addImage(img, "PNG", diagramX, yOffset, diagramWidth, diagramHeight);
+        } catch (error) {
+          console.warn("Failed to add diagram image to PDF:", error);
+          // Fallback: try with reduced size if image is too large
+          const fallbackWidth = diagramWidth * 0.8;
+          const fallbackHeight = diagramHeight * 0.8;
+          pdf.addImage(img, "PNG", (pageWidth - fallbackWidth) / 2, yOffset, fallbackWidth, fallbackHeight);
+        }
         yOffset += diagramHeight + 15;
       } catch (err) {
         yOffset = addWrappedText("[Deflection Diagram could not be captured]", margin, yOffset, contentWidth, 6, 10);
@@ -2349,27 +2540,74 @@ export default function BeamLoadCalculator() {
                   </div>
                 )}
                 {load.type === "Distributed Load" && (
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <Label htmlFor={`load-area-${index}`} className="flex items-center gap-2">
-                      <Ruler className="w-4 h-4 text-gray-500" />
-                      Area (m²)
-                    </Label>
-                    <Input
-                      type="number"
-                      id={`load-area-${index}`}
-                      min={0.1}
-                      step={0.1}
-                      max={((analysisType === "Base Frame" ? frameLength * frameWidth : beamLength * width) / 1_000_000).toFixed(2)}
-                      value={load.area || 0.5}
-                      onChange={(e) => {
-                        let val = Math.max(0.1, Number(e.target.value));
-                        const maxArea = (analysisType === "Base Frame" ? frameLength * frameWidth : beamLength * width) / 1_000_000;
-                        if (val > maxArea) val = maxArea;
-                        updateLoad(index, { area: val });
-                      }}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
+                  <>
+                    {analysisType === "Base Frame" ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <Label htmlFor={`load-length-${index}`} className="flex items-center gap-2">
+                            <Ruler className="w-4 h-4 text-gray-500" />
+                            Component Length (mm)
+                          </Label>
+                          <Input
+                            type="number"
+                            id={`load-length-${index}`}
+                            min={1}
+                            step={1}
+                            max={frameLength}
+                            value={load.loadLength || 500}
+                            onChange={(e) => {
+                              let val = Math.max(1, Number(e.target.value));
+                              if (val > frameLength) val = frameLength;
+                              updateLoad(index, { loadLength: val });
+                            }}
+                            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <Label htmlFor={`load-width-${index}`} className="flex items-center gap-2">
+                            <Ruler className="w-4 h-4 text-gray-500" />
+                            Component Width (mm)
+                          </Label>
+                          <Input
+                            type="number"
+                            id={`load-width-${index}`}
+                            min={1}
+                            step={1}
+                            max={frameWidth}
+                            value={load.loadWidth || frameWidth}
+                            onChange={(e) => {
+                              let val = Math.max(1, Number(e.target.value));
+                              if (val > frameWidth) val = frameWidth;
+                              updateLoad(index, { loadWidth: val });
+                            }}
+                            className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <Label htmlFor={`load-area-${index}`} className="flex items-center gap-2">
+                          <Ruler className="w-4 h-4 text-gray-500" />
+                          Area (m²)
+                        </Label>
+                        <Input
+                          type="number"
+                          id={`load-area-${index}`}
+                          min={0.1}
+                          step={0.1}
+                          max={((beamLength * width) / 1_000_000).toFixed(2)}
+                          value={load.area || 0.5}
+                          onChange={(e) => {
+                            let val = Math.max(0.1, Number(e.target.value));
+                            const maxArea = (beamLength * width) / 1_000_000;
+                            if (val > maxArea) val = maxArea;
+                            updateLoad(index, { area: val });
+                          }}
+                          className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
                 <Button variant="destructive" size="sm" onClick={() => removeLoad(index)} className="w-full">
                   Remove Load
