@@ -21,7 +21,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
   sections = [],
 }) => {
   const svgWidth = 500
-  const svgHeight = 500 // Increased height to accommodate corner reaction table
+  const svgHeight = 550 // Increased height to accommodate corner reaction table and prevent overlap
   const margin = 80
 
   const validFrameLength = validatePositive(frameLength, 1000)
@@ -218,9 +218,9 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           {/* Table background */}
           <rect
             x={margin}
-            y={frameRect.y + frameRect.height + 20}
+            y={frameRect.y + frameRect.height + 15}
             width={svgWidth - 2 * margin}
-            height={80}
+            height={75}
             fill="#f8f9fa"
             stroke="#dee2e6"
             strokeWidth="1"
@@ -230,7 +230,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           {/* Table header */}
           <text
             x={svgWidth / 2}
-            y={frameRect.y + frameRect.height + 35}
+            y={frameRect.y + frameRect.height + 30}
             textAnchor="middle"
             fontSize="11"
             fontWeight="bold"
@@ -256,7 +256,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
                 {/* Corner label */}
                 <text
                   x={corner.x}
-                  y={frameRect.y + frameRect.height + 50}
+                  y={frameRect.y + frameRect.height + 45}
                   textAnchor="middle"
                   fontSize="10"
                   fontWeight="bold"
@@ -268,7 +268,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
                 {/* N value */}
                 <text
                   x={corner.x}
-                  y={frameRect.y + frameRect.height + 65}
+                  y={frameRect.y + frameRect.height + 58}
                   textAnchor="middle"
                   fontSize="9"
                   fill="#333"
@@ -279,7 +279,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
                 {/* kgf value */}
                 <text
                   x={corner.x}
-                  y={frameRect.y + frameRect.height + 78}
+                  y={frameRect.y + frameRect.height + 70}
                   textAnchor="middle"
                   fontSize="9"
                   fill="#333"
@@ -290,7 +290,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
                 {/* lbf value */}
                 <text
                   x={corner.x}
-                  y={frameRect.y + frameRect.height + 91}
+                  y={frameRect.y + frameRect.height + 82}
                   textAnchor="middle"
                   fontSize="9"
                   fill="#333"
@@ -303,8 +303,8 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
         </g>
       )}
 
-      {/* Simplified dimension labels */}
-      <text x={svgWidth / 2} y={svgHeight - 10} textAnchor="middle" fontSize="11" fill="#666">
+      {/* Simplified dimension labels - moved further down to avoid overlap */}
+      <text x={svgWidth / 2} y={svgHeight - 5} textAnchor="middle" fontSize="11" fill="#666">
         {validFrameLength}mm × {validFrameWidth}mm
       </text>
     </svg>
