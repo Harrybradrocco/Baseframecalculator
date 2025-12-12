@@ -163,12 +163,12 @@ export default function BeamLoadCalculator() {
   }
 
   const removeLoad = (index: number) => {
-    setLoads(loads.filter((_, i) => i !== index))
+    setLoads(loads.filter((_load: Load, i: number) => i !== index))
   }
 
   const updateLoad = (index: number, updatedLoad: Partial<Load>) => {
     setLoads(
-      loads.map((load, i) => {
+      loads.map((load: Load, i: number) => {
         if (i === index) {
           const newLoad = { ...load, ...updatedLoad }
           if (newLoad.type === "Uniform Load" && !newLoad.endPosition) {
@@ -222,14 +222,14 @@ export default function BeamLoadCalculator() {
   }
 
   const removeSection = (id: string) => {
-    setSections(sections.filter((s) => s.id !== id))
+    setSections(sections.filter((s: Section) => s.id !== id))
     // Remove sectionId from loads that reference this section
-    setLoads(loads.map((load) => (load.sectionId === id ? { ...load, sectionId: undefined } : load)))
+    setLoads(loads.map((load: Load) => (load.sectionId === id ? { ...load, sectionId: undefined } : load)))
   }
 
   const updateSection = (id: string, updatedSection: Partial<Section>) => {
     setSections(
-      sections.map((section) => {
+      sections.map((section: Section) => {
         if (section.id === id) {
           return { ...section, ...updatedSection }
         }
@@ -356,7 +356,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="beam-length"
                     value={beamLength}
-                    onChange={(e) => setBeamLength(validatePositive(Number(e.target.value), 1000))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBeamLength(validatePositive(Number(e.target.value), 1000))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -369,7 +369,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="left-support"
                     value={leftSupport}
-                    onChange={(e) => setLeftSupport(validateNumber(Number(e.target.value), 0))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLeftSupport(validateNumber(Number(e.target.value), 0))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -382,7 +382,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="right-support"
                     value={rightSupport}
-                    onChange={(e) => setRightSupport(validatePositive(Number(e.target.value), beamLength))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRightSupport(validatePositive(Number(e.target.value), beamLength))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -398,7 +398,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="frame-length"
                     value={frameLength}
-                    onChange={(e) => setFrameLength(validatePositive(Number(e.target.value), 2000))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFrameLength(validatePositive(Number(e.target.value), 2000))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -411,7 +411,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="frame-width"
                     value={frameWidth}
-                    onChange={(e) => setFrameWidth(validatePositive(Number(e.target.value), 1000))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFrameWidth(validatePositive(Number(e.target.value), 1000))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -443,7 +443,7 @@ export default function BeamLoadCalculator() {
                 </Button>
               </div>
 
-              {sections.map((section, index) => (
+              {sections.map((section: Section, index: number) => (
                 <div key={section.id} className="border border-gray-200 rounded-lg p-4 space-y-4">
                   <div className="flex justify-between items-center">
                     <h4 className="font-semibold text-gray-700">{section.name || `Section ${index + 1}`}</h4>
@@ -463,7 +463,7 @@ export default function BeamLoadCalculator() {
                       <Input
                         id={`section-name-${section.id}`}
                         value={section.name || ""}
-                        onChange={(e) => updateSection(section.id, { name: e.target.value })}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSection(section.id, { name: e.target.value })}
                         placeholder={`Section ${index + 1}`}
                       />
                     </div>
@@ -473,7 +473,7 @@ export default function BeamLoadCalculator() {
                         type="number"
                         id={`section-start-${section.id}`}
                         value={section.startPosition}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           updateSection(section.id, {
                             startPosition: validateNumber(Number(e.target.value), 0),
                           })
@@ -486,7 +486,7 @@ export default function BeamLoadCalculator() {
                         type="number"
                         id={`section-end-${section.id}`}
                         value={section.endPosition}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           updateSection(section.id, {
                             endPosition: validatePositive(Number(e.target.value), section.startPosition + 100),
                           })
@@ -513,7 +513,7 @@ export default function BeamLoadCalculator() {
                           type="number"
                           id={`section-casing-${section.id}`}
                           value={section.casingWeight}
-                          onChange={(e) =>
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             updateSection(section.id, {
                               casingWeight: validateNumber(Number(e.target.value), 0),
                             })
@@ -522,7 +522,7 @@ export default function BeamLoadCalculator() {
                         />
                         <Select
                           value={section.casingWeightUnit}
-                          onValueChange={(value) =>
+                          onValueChange={(value: string) =>
                             updateSection(section.id, { casingWeightUnit: value as "N" | "kg" | "lbs" })
                           }
                         >
@@ -544,7 +544,7 @@ export default function BeamLoadCalculator() {
                           type="number"
                           id={`section-primary-${section.id}`}
                           value={section.primaryLoad}
-                          onChange={(e) =>
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                             updateSection(section.id, {
                               primaryLoad: validateNumber(Number(e.target.value), 0),
                             })
@@ -553,7 +553,7 @@ export default function BeamLoadCalculator() {
                         />
                         <Select
                           value={section.primaryLoadUnit}
-                          onValueChange={(value) =>
+                          onValueChange={(value: string) =>
                             updateSection(section.id, { primaryLoadUnit: value as "N" | "kg" | "lbs" })
                           }
                         >
@@ -625,7 +625,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="width"
                     value={width}
-                    onChange={(e) => setWidth(validatePositive(Number(e.target.value), 100))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWidth(validatePositive(Number(e.target.value), 100))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -638,7 +638,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="height"
                     value={height}
-                    onChange={(e) => setHeight(validatePositive(Number(e.target.value), 218))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeight(validatePositive(Number(e.target.value), 218))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -656,7 +656,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="height"
                     value={height}
-                    onChange={(e) => setHeight(validatePositive(Number(e.target.value), 218))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeight(validatePositive(Number(e.target.value), 218))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -669,7 +669,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="flange-width"
                     value={flangeWidth}
-                    onChange={(e) => setFlangeWidth(validatePositive(Number(e.target.value), 66))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFlangeWidth(validatePositive(Number(e.target.value), 66))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -682,7 +682,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="flange-thickness"
                     value={flangeThickness}
-                    onChange={(e) => setFlangeThickness(validatePositive(Number(e.target.value), 3))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFlangeThickness(validatePositive(Number(e.target.value), 3))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -695,7 +695,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="web-thickness"
                     value={webThickness}
-                    onChange={(e) => setWebThickness(validatePositive(Number(e.target.value), 44.8))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setWebThickness(validatePositive(Number(e.target.value), 44.8))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -713,7 +713,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="diameter"
                     value={diameter}
-                    onChange={(e) => setDiameter(validatePositive(Number(e.target.value), 100))}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDiameter(validatePositive(Number(e.target.value), 100))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
@@ -732,7 +732,7 @@ export default function BeamLoadCalculator() {
             <CardDescription className="text-sm">Add and manage loads applied to the beam.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 p-6">
-            {loads.map((load, index) => (
+            {loads.map((load: Load, index: number) => (
               <div key={index} className="border border-gray-200 p-4 rounded-lg bg-gray-50">
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <Label htmlFor={`load-name-${index}`} className="flex items-center gap-2">
@@ -743,7 +743,7 @@ export default function BeamLoadCalculator() {
                     type="text"
                     id={`load-name-${index}`}
                     value={load.name || `Load ${index + 1}`}
-                    onChange={(e) => updateLoad(index, { name: e.target.value })}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateLoad(index, { name: e.target.value })}
                     placeholder={`Load ${index + 1}`}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
@@ -755,7 +755,7 @@ export default function BeamLoadCalculator() {
                   </Label>
                   <Select
                     value={load.type}
-                    onValueChange={(value) => updateLoad(index, { type: value as Load["type"] })}
+                    onValueChange={(value: string) => updateLoad(index, { type: value as Load["type"] })}
                   >
                     <SelectTrigger id={`load-type-${index}`}>
                       <SelectValue placeholder="Select" />
@@ -777,12 +777,12 @@ export default function BeamLoadCalculator() {
                       type="number"
                       id={`load-magnitude-${index}`}
                       value={load.magnitude}
-                      onChange={(e) => updateLoad(index, { magnitude: validateNumber(Number(e.target.value), 1000) })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateLoad(index, { magnitude: validateNumber(Number(e.target.value), 1000) })}
                       className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                     />
                     <Select
                       value={load.unit || "N"}
-                      onValueChange={(value) => updateLoad(index, { unit: value as "N" | "kg" | "lbs" })}
+                      onValueChange={(value: string) => updateLoad(index, { unit: value as "N" | "kg" | "lbs" })}
                     >
                       <SelectTrigger className="w-24">
                         <SelectValue />
@@ -828,7 +828,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id={`load-position-${index}`}
                     value={load.startPosition}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       updateLoad(index, {
                         startPosition: validateNumber(
                           Number(e.target.value),
@@ -849,7 +849,7 @@ export default function BeamLoadCalculator() {
                       type="number"
                       id={`load-end-position-${index}`}
                       value={load.endPosition || load.startPosition + 100}
-                      onChange={(e) =>
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                         updateLoad(index, {
                           endPosition: validateNumber(Number(e.target.value), load.startPosition + 100),
                         })
@@ -874,7 +874,7 @@ export default function BeamLoadCalculator() {
                             step={1}
                             max={frameLength}
                             value={load.loadLength || 500}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               let val = Math.max(1, Number(e.target.value));
                               if (val > frameLength) val = frameLength;
                               updateLoad(index, { loadLength: val });
@@ -894,7 +894,7 @@ export default function BeamLoadCalculator() {
                             step={1}
                             max={frameWidth}
                             value={load.loadWidth || frameWidth}
-                            onChange={(e) => {
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                               let val = Math.max(1, Number(e.target.value));
                               if (val > frameWidth) val = frameWidth;
                               updateLoad(index, { loadWidth: val });
@@ -916,7 +916,7 @@ export default function BeamLoadCalculator() {
                           step={0.1}
                           max={((beamLength * width) / 1_000_000).toFixed(2)}
                           value={load.area || 0.5}
-                          onChange={(e) => {
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                             let val = Math.max(0.1, Number(e.target.value));
                             const maxArea = (beamLength * width) / 1_000_000;
                             if (val > maxArea) val = maxArea;
@@ -979,7 +979,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="yield-strength"
                     value={customMaterial.yieldStrength}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setCustomMaterial({ ...customMaterial, yieldStrength: validateNumber(Number(e.target.value), 0) })
                     }
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
@@ -994,7 +994,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="elastic-modulus"
                     value={customMaterial.elasticModulus}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setCustomMaterial({
                         ...customMaterial,
                         elasticModulus: validateNumber(Number(e.target.value), 0),
@@ -1012,7 +1012,7 @@ export default function BeamLoadCalculator() {
                     type="number"
                     id="density"
                     value={customMaterial.density}
-                    onChange={(e) =>
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setCustomMaterial({ ...customMaterial, density: validateNumber(Number(e.target.value), 0) })
                     }
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
