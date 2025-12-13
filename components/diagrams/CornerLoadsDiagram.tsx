@@ -20,8 +20,8 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
   cornerReactions,
   sections = [],
 }) => {
-  const svgWidth = 600 // Increased width to accommodate horizontal text format
-  const svgHeight = 500 // Reduced height since table is now single line
+  const svgWidth = 700 // Increased width further to prevent overlap
+  const svgHeight = 520 // Increased height to accommodate two-row table layout
   const margin = 80
 
   const validFrameLength = validatePositive(frameLength, 1000)
@@ -212,15 +212,15 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
         </marker>
       </defs>
 
-      {/* Corner reactions table below diagram */}
+      {/* Corner reactions table below diagram - Two row layout to prevent overlap */}
       {cornerReactions && (
         <g>
           {/* Table background */}
           <rect
             x={margin}
-            y={frameRect.y + frameRect.height + 20}
+            y={frameRect.y + frameRect.height + 15}
             width={svgWidth - 2 * margin}
-            height={50}
+            height={70}
             fill="#f8f9fa"
             stroke="#dee2e6"
             strokeWidth="1"
@@ -230,7 +230,7 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
           {/* Table header */}
           <text
             x={svgWidth / 2}
-            y={frameRect.y + frameRect.height + 35}
+            y={frameRect.y + frameRect.height + 30}
             textAnchor="middle"
             fontSize="11"
             fontWeight="bold"
@@ -239,14 +239,12 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
             Corner Reactions
           </text>
           
-          {/* Corner reactions in requested format: R1 -> N xx | kgf -> xx | lbf ->xx */}
+          {/* Row 1: R1 and R2 */}
           {[
-            { label: "R1", x: margin + 50 },
-            { label: "R2", x: margin + (svgWidth - 2 * margin) / 3 + 50 },
-            { label: "R3", x: margin + (2 * (svgWidth - 2 * margin)) / 3 + 50 },
-            { label: "R4", x: svgWidth - margin - 50 },
-          ].map((corner, idx) => {
-            const reactionKey = `R${idx + 1}` as keyof typeof cornerReactions
+            { label: "R1", x: margin + (svgWidth - 2 * margin) / 4, idx: 0 },
+            { label: "R2", x: margin + (3 * (svgWidth - 2 * margin)) / 4, idx: 1 },
+          ].map((corner) => {
+            const reactionKey = `R${corner.idx + 1}` as keyof typeof cornerReactions
             const reaction = cornerReactions[reactionKey] || 0
             const kgf = nToKg(reaction)
             const lbf = nToLbs(reaction)
@@ -258,7 +256,34 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
               <text
                 key={corner.label}
                 x={corner.x}
-                y={frameRect.y + frameRect.height + 52}
+                y={frameRect.y + frameRect.height + 48}
+                textAnchor="middle"
+                fontSize="8"
+                fill="#333"
+              >
+                {formattedText}
+              </text>
+            )
+          })}
+          
+          {/* Row 2: R3 and R4 */}
+          {[
+            { label: "R3", x: margin + (svgWidth - 2 * margin) / 4, idx: 2 },
+            { label: "R4", x: margin + (3 * (svgWidth - 2 * margin)) / 4, idx: 3 },
+          ].map((corner) => {
+            const reactionKey = `R${corner.idx + 1}` as keyof typeof cornerReactions
+            const reaction = cornerReactions[reactionKey] || 0
+            const kgf = nToKg(reaction)
+            const lbf = nToLbs(reaction)
+            
+            // Format: R3 -> N xx | kgf -> xx | lbf ->xx
+            const formattedText = `${corner.label} -> N ${reaction.toFixed(0)} | kgf ${kgf.toFixed(1)} | lbf ${lbf.toFixed(1)}`
+            
+            return (
+              <text
+                key={corner.label}
+                x={corner.x}
+                y={frameRect.y + frameRect.height + 65}
                 textAnchor="middle"
                 fontSize="8"
                 fill="#333"
