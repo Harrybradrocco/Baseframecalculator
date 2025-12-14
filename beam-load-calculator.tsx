@@ -21,6 +21,7 @@ import { BeamCrossSectionImage } from "./components/BeamCrossSectionImage"
 import { useBeamCalculations } from "./hooks/useBeamCalculations"
 import { useDiagramCalculations } from "./hooks/useDiagramCalculations"
 import { generatePDF } from "./utils/pdfGeneration"
+import { generateLaTeX, downloadLaTeX } from "./utils/latexGeneration"
 
 // All components are now imported from modules - no local definitions needed
 
@@ -283,6 +284,30 @@ export default function BeamLoadCalculator() {
       setIsGeneratingPDF(false)
     }
   }
+
+  const handleDownloadLaTeX = () => {
+    try {
+      const latex = generateLaTeX({
+        analysisType,
+        beamLength,
+        frameLength,
+        frameWidth,
+        leftSupport,
+        rightSupport,
+        beamCrossSection,
+        material,
+        customMaterial,
+        loads,
+        sections,
+        results,
+      })
+      const fileName = `${analysisType.toLowerCase().replace(" ", "_")}_analysis_report_${new Date().toISOString().split("T")[0]}.tex`
+      downloadLaTeX(latex, fileName)
+    } catch (error) {
+      console.error("Error generating LaTeX:", error)
+      alert("Error generating LaTeX file. Please try again.\n" + (error instanceof Error ? error.message : String(error)))
+    }
+  }
   return (
     <div className="container mx-auto p-4 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen" style={{ fontFamily: '"Inter", "Segoe UI", system-ui, sans-serif' }}>
       <Head>
@@ -328,6 +353,15 @@ export default function BeamLoadCalculator() {
                 Download PDF
               </>
             )}
+          </Button>
+          <Button 
+            onClick={handleDownloadLaTeX} 
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Download LaTeX
           </Button>
           <HelpDialog />
         </div>
