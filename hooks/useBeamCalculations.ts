@@ -205,8 +205,13 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
     } else {
       // Base frame analysis - Calculate corner reactions based on load positions
       totalBeams = 4
+      // Frame weight calculation: 4 beams forming a rectangle
+      // 2 beams of length frameLengthM, 2 beams of length frameWidthM
+      // Each beam has cross-sectional area = beamVolume (m²)
+      // Total volume = beamVolume × (2×frameLengthM + 2×frameWidthM) = beamVolume × framePerimeter
       const framePerimeter = 2 * (frameLengthM + frameWidthM)
-      frameWeightN = beamVolume * framePerimeter * beamDensity * 9.81
+      const frameVolumeM3 = beamVolume * framePerimeter // Cross-sectional area × total length = volume
+      frameWeightN = frameVolumeM3 * beamDensity * 9.81 // Volume × density × gravity = weight in N
 
       // Initialize corner reactions (R1=top-left, R2=top-right, R3=bottom-left, R4=bottom-right)
       let R1 = 0, R2 = 0, R3 = 0, R4 = 0
@@ -322,6 +327,9 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
       R3 += frameWeightPerCorner
       R4 += frameWeightPerCorner
 
+      // Add frame weight to total applied load for stress/deflection calculations
+      totalAppliedLoad += frameWeightN
+
       // Calculate critical beam length (longer of the two sides)
       const criticalBeamLength = Math.max(frameLengthM, frameWidthM)
 
@@ -330,6 +338,7 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
       
       // Calculate equivalent uniform load for critical beam analysis
       // This is used for stress calculations
+      // Note: Each beam carries 1/4 of the total load
       loadPerBeam = totalAppliedLoad / 4
       const uniformLoadPerMeter = loadPerBeam / criticalBeamLength
       maxShearForce = (uniformLoadPerMeter * criticalBeamLength) / 2
@@ -338,6 +347,20 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
       // Store individual corner reactions
       cornerReactionForce = maxCornerReaction
       cornerReactions = { R1, R2, R3, R4 }
+      
+      // Debug logging (can be removed in production)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Frame Weight Calculation:', {
+          beamVolume: beamVolume,
+          framePerimeter: framePerimeter,
+          frameVolumeM3: frameVolumeM3,
+          beamDensity: beamDensity,
+          frameWeightN: frameWeightN,
+          frameWeightKg: frameWeightN / 9.81,
+          totalAppliedLoad: totalAppliedLoad,
+          cornerReactions: { R1, R2, R3, R4 }
+        })
+      }
     }
 
     setFrameWeight(Number(frameWeightN.toFixed(2)))

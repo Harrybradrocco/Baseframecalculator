@@ -1083,19 +1083,23 @@ export default function BeamLoadCalculator() {
                 <div className="text-sm text-gray-600">Max Deflection (mm)</div>
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="text-2xl font-bold text-gray-600 group relative">
-                  {frameWeight}
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                    <div className="font-mono">{(frameWeight / 9.81).toFixed(1)} kg</div>
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
-                  </div>
+                <div className="text-2xl font-bold text-gray-600">
+                  {(frameWeight / 9.81).toFixed(1)} kg
                 </div>
-                <div className="text-sm text-gray-600">Structure Weight (N)</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  ({frameWeight.toFixed(0)} N)
+                </div>
+                <div className="text-sm text-gray-600 mt-1">Structure Weight</div>
               </div>
               {analysisType === "Base Frame" && (
                 <div className="text-center p-4 bg-teal-50 rounded-lg border border-teal-200">
-                  <div className="text-2xl font-bold text-teal-600">{results.cornerReactionForce}</div>
-                  <div className="text-sm text-gray-600">Corner Reaction (N)</div>
+                  <div className="text-2xl font-bold text-teal-600">
+                    {(results.cornerReactionForce / 9.81).toFixed(1)} kg
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    ({results.cornerReactionForce.toFixed(0)} N)
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">Max Corner Reaction</div>
                 </div>
               )}
             </div>
