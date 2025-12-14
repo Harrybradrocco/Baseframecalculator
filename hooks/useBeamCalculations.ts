@@ -24,6 +24,7 @@ interface UseBeamCalculationsParams {
   diameter: number
   beamDensity: number
   beamCrossSection: string
+  frameWeight: number // User-provided frame weight in N (for Base Frame) or calculated (for Simple Beam)
   setFrameWeight: (weight: number) => void
   setResults: (results: Results) => void
 }
@@ -48,6 +49,7 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
     diameter,
     beamDensity,
     beamCrossSection,
+    frameWeight: providedFrameWeight,
     setFrameWeight,
     setResults,
   } = params
@@ -205,13 +207,16 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
     } else {
       // Base frame analysis - Calculate corner reactions based on load positions
       totalBeams = 4
-      // Frame weight calculation: 4 beams forming a rectangle
-      // 2 beams of length frameLengthM, 2 beams of length frameWidthM
-      // Each beam has cross-sectional area = beamVolume (m²)
-      // Total volume = beamVolume × (2×frameLengthM + 2×frameWidthM) = beamVolume × framePerimeter
-      const framePerimeter = 2 * (frameLengthM + frameWidthM)
-      const frameVolumeM3 = beamVolume * framePerimeter // Cross-sectional area × total length = volume
-      frameWeightN = frameVolumeM3 * beamDensity * 9.81 // Volume × density × gravity = weight in N
+      // For Base Frame: Use user-provided frame weight (from actual measurement)
+      // If not provided (0), calculate from beam profile as fallback
+      if (providedFrameWeight > 0) {
+        frameWeightN = providedFrameWeight
+      } else {
+        // Fallback: Calculate from beam profile (not recommended - use actual measurement)
+        const framePerimeter = 2 * (frameLengthM + frameWidthM)
+        const frameVolumeM3 = beamVolume * framePerimeter
+        frameWeightN = frameVolumeM3 * beamDensity * 9.81
+      }
 
       // Initialize corner reactions (R1=top-left, R2=top-right, R3=bottom-left, R4=bottom-right)
       let R1 = 0, R2 = 0, R3 = 0, R4 = 0
@@ -454,6 +459,7 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
     diameter,
     beamDensity,
     beamCrossSection,
+    providedFrameWeight,
     setFrameWeight,
     setResults,
   ])

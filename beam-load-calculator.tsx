@@ -47,7 +47,9 @@ export default function BeamLoadCalculator() {
   const [webThickness, setWebThickness] = useState(44.8)
   const [diameter, setDiameter] = useState(100)
   const [beamDensity, setBeamDensity] = useState(7850)
-  const [frameWeight, setFrameWeight] = useState(0)
+  const [frameWeight, setFrameWeight] = useState(0) // User-provided frame weight in N
+  const [frameWeightInput, setFrameWeightInput] = useState(0) // User input for frame weight
+  const [frameWeightUnit, setFrameWeightUnit] = useState<"N" | "kg" | "lbs">("kg")
   const [results, setResults] = useState({
     maxShearForce: 0,
     maxBendingMoment: 0,
@@ -67,6 +69,7 @@ export default function BeamLoadCalculator() {
 
   // Use calculation hooks
   const { calculateResults } = useBeamCalculations({
+    frameWeight,
     analysisType,
     beamLength,
     frameLength,
@@ -85,6 +88,7 @@ export default function BeamLoadCalculator() {
     diameter,
     beamDensity,
     beamCrossSection,
+    frameWeight,
     setFrameWeight,
     setResults,
   })
@@ -414,6 +418,96 @@ export default function BeamLoadCalculator() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFrameWidth(validatePositive(Number(e.target.value), 1000))}
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="frame-weight-input" className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-gray-500" />
+                    Frame Weight (from actual measurement)
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      id="frame-weight-input"
+                      value={frameWeightInput}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const value = validateNumber(Number(e.target.value), 0)
+                        setFrameWeightInput(value)
+                        // Convert to N and update frameWeight
+                        let weightInN = 0
+                        if (frameWeightUnit === "kg") {
+                          weightInN = value * 9.81
+                        } else if (frameWeightUnit === "lbs") {
+                          weightInN = value * 4.44822
+                        } else {
+                          weightInN = value
+                        }
+                        setFrameWeight(weightInN)
+                      }}
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 flex-1"
+                      placeholder="Enter frame weight"
+                    />
+                    <Select
+                      value={frameWeightUnit}
+                      onValueChange={(value: string) => {
+                        const unit = value as "N" | "kg" | "lbs"
+                        const oldUnit = frameWeightUnit
+                        setFrameWeightUnit(unit)
+                        // Convert current frameWeight (in N) to new unit for display
+                        let displayValue = 0
+                        if (oldUnit === "kg") {
+                          // Current input was in kg, convert to new unit
+                          if (unit === "N") {
+                            displayValue = frameWeightInput * 9.81
+                          } else if (unit === "lbs") {
+                            displayValue = (frameWeightInput * 9.81) / 4.44822
+                          } else {
+                            displayValue = frameWeightInput
+                          }
+                        } else if (oldUnit === "lbs") {
+                          // Current input was in lbs, convert to new unit
+                          if (unit === "N") {
+                            displayValue = frameWeightInput * 4.44822
+                          } else if (unit === "kg") {
+                            displayValue = (frameWeightInput * 4.44822) / 9.81
+                          } else {
+                            displayValue = frameWeightInput
+                          }
+                        } else {
+                          // Current input was in N, convert to new unit
+                          if (unit === "kg") {
+                            displayValue = frameWeightInput / 9.81
+                          } else if (unit === "lbs") {
+                            displayValue = frameWeightInput / 4.44822
+                          } else {
+                            displayValue = frameWeightInput
+                          }
+                        }
+                        setFrameWeightInput(displayValue)
+                        // Update frameWeight in N
+                        if (unit === "kg") {
+                          setFrameWeight(displayValue * 9.81)
+                        } else if (unit === "lbs") {
+                          setFrameWeight(displayValue * 4.44822)
+                        } else {
+                          setFrameWeight(displayValue)
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="N">N</SelectItem>
+                        <SelectItem value="lbs">lbs</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
+                  <Info className="w-3 h-3 inline mr-1" />
+                  Enter the actual measured frame weight from your software (e.g., 334 kg total for all segments).
+                  This will be used instead of calculating from beam profile.
                 </div>
               </>
             )}
