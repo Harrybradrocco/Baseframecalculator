@@ -208,10 +208,18 @@ export default function BeamLoadCalculator() {
   const addSection = () => {
     const maxLength = analysisType === "Simple Beam" ? beamLength : frameLength
     let newStartPosition = 0
+    const updatedSections = [...sections]
+    
     if (sections.length > 0) {
       const lastSection = sections[sections.length - 1]
       newStartPosition = lastSection.endPosition
+      // Automatically add leg support to previous section at its end position (if not already set)
+      const lastIndex = sections.length - 1
+      if (!updatedSections[lastIndex].supportType) {
+        updatedSections[lastIndex] = { ...updatedSections[lastIndex], supportType: "leg" }
+      }
     }
+    
     const newSection: Section = {
       id: `section-${Date.now()}`,
       startPosition: newStartPosition,
@@ -221,8 +229,10 @@ export default function BeamLoadCalculator() {
       primaryLoad: 0,
       primaryLoadUnit: "N",
       name: `Section ${sections.length + 1}`,
+      supportType: sections.length > 0 ? "leg" : undefined, // Add support at start if not first section
     }
-    setSections([...sections, newSection])
+    
+    setSections([...updatedSections, newSection])
   }
 
   const removeSection = (id: string) => {
@@ -501,6 +511,11 @@ export default function BeamLoadCalculator() {
                         <SelectItem value="N">N</SelectItem>
                         <SelectItem value="lbs">lbs</SelectItem>
                       </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Frame weight should be entered in kg
+                  </div>
                     </Select>
                   </div>
                 </div>

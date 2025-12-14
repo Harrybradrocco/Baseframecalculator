@@ -7,6 +7,7 @@ export interface Section {
   primaryLoad: number // Primary load for this section (distributed evenly)
   primaryLoadUnit: "N" | "kg" | "lbs"
   name?: string // Optional section name
+  supportType?: "leg" | "hook" | "none" // Support type at section boundary
 }
 
 export interface Load {
