@@ -47,9 +47,7 @@ export default function BeamLoadCalculator() {
   const [webThickness, setWebThickness] = useState(44.8)
   const [diameter, setDiameter] = useState(100)
   const [beamDensity, setBeamDensity] = useState(7850)
-  const [frameWeight, setFrameWeight] = useState(0) // User-provided frame weight in N
-  const [frameWeightInput, setFrameWeightInput] = useState(0) // User input for frame weight
-  const [frameWeightUnit, setFrameWeightUnit] = useState<"N" | "kg" | "lbs">("kg")
+  const [frameWeight, setFrameWeight] = useState(0) // Calculated total frame weight in N (sum of all section baseframe weights)
   const [results, setResults] = useState({
     maxShearForce: 0,
     maxBendingMoment: 0,
@@ -225,6 +223,10 @@ export default function BeamLoadCalculator() {
       endPosition: Math.min(newStartPosition + 1000, maxLength),
       casingWeight: 0,
       casingWeightUnit: "N",
+      baseframeWeight: 0,
+      baseframeWeightUnit: "kg",
+      roofWeight: 0,
+      roofWeightUnit: "kg",
       primaryLoad: 0,
       primaryLoadUnit: "N",
       name: `Section ${sections.length + 1}`,
@@ -428,98 +430,10 @@ export default function BeamLoadCalculator() {
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Label htmlFor="frame-weight-input" className="flex items-center gap-2">
-                    <Package className="w-4 h-4 text-gray-500" />
-                    Frame Weight (from actual measurement)
-                  </Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      id="frame-weight-input"
-                      value={frameWeightInput}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                        const value = validateNumber(Number(e.target.value), 0)
-                        setFrameWeightInput(value)
-                        // Convert to N and update frameWeight
-                        let weightInN = 0
-                        if (frameWeightUnit === "kg") {
-                          weightInN = value * 9.81
-                        } else if (frameWeightUnit === "lbs") {
-                          weightInN = value * 4.44822
-                        } else {
-                          weightInN = value
-                        }
-                        setFrameWeight(weightInN)
-                      }}
-                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 flex-1"
-                      placeholder="Enter frame weight"
-                    />
-                    <Select
-                      value={frameWeightUnit}
-                      onValueChange={(value: string) => {
-                        const unit = value as "N" | "kg" | "lbs"
-                        const oldUnit = frameWeightUnit
-                        setFrameWeightUnit(unit)
-                        // Convert current frameWeight (in N) to new unit for display
-                        let displayValue = 0
-                        if (oldUnit === "kg") {
-                          // Current input was in kg, convert to new unit
-                          if (unit === "N") {
-                            displayValue = frameWeightInput * 9.81
-                          } else if (unit === "lbs") {
-                            displayValue = (frameWeightInput * 9.81) / 4.44822
-                          } else {
-                            displayValue = frameWeightInput
-                          }
-                        } else if (oldUnit === "lbs") {
-                          // Current input was in lbs, convert to new unit
-                          if (unit === "N") {
-                            displayValue = frameWeightInput * 4.44822
-                          } else if (unit === "kg") {
-                            displayValue = (frameWeightInput * 4.44822) / 9.81
-                          } else {
-                            displayValue = frameWeightInput
-                          }
-                        } else {
-                          // Current input was in N, convert to new unit
-                          if (unit === "kg") {
-                            displayValue = frameWeightInput / 9.81
-                          } else if (unit === "lbs") {
-                            displayValue = frameWeightInput / 4.44822
-                          } else {
-                            displayValue = frameWeightInput
-                          }
-                        }
-                        setFrameWeightInput(displayValue)
-                        // Update frameWeight in N
-                        if (unit === "kg") {
-                          setFrameWeight(displayValue * 9.81)
-                        } else if (unit === "lbs") {
-                          setFrameWeight(displayValue * 4.44822)
-                        } else {
-                          setFrameWeight(displayValue)
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-24">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="kg">kg</SelectItem>
-                        <SelectItem value="N">N</SelectItem>
-                        <SelectItem value="lbs">lbs</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Frame weight should be entered in kg
-                  </div>
-                </div>
                 <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
                   <Info className="w-3 h-3 inline mr-1" />
-                  Enter the actual measured frame weight from your software (e.g., 334 kg total for all segments).
-                  This will be used instead of calculating from beam profile.
+                  Frame weight and roof weight should be entered per section in the Sections Management section below.
+                  The total frame weight will be calculated as the sum of all section baseframe weights.
                 </div>
               </>
             )}
@@ -671,6 +585,76 @@ export default function BeamLoadCalculator() {
                       </div>
                     </div>
                     <div>
+                      <Label htmlFor={`section-baseframe-${section.id}`}>Baseframe Weight (kg)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          id={`section-baseframe-${section.id}`}
+                          value={section.baseframeWeight || 0}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            updateSection(section.id, {
+                              baseframeWeight: validateNumber(Number(e.target.value), 0),
+                            })
+                          }
+                          className="flex-1"
+                          placeholder="Enter baseframe weight"
+                        />
+                        <Select
+                          value={section.baseframeWeightUnit || "kg"}
+                          onValueChange={(value: string) =>
+                            updateSection(section.id, { baseframeWeightUnit: value as "N" | "kg" | "lbs" })
+                          }
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="N">N</SelectItem>
+                            <SelectItem value="lbs">lbs</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Baseframe weight for this section length (e.g., 62 kg for 941 mm)
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor={`section-roof-${section.id}`}>Roof Weight (kg)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          id={`section-roof-${section.id}`}
+                          value={section.roofWeight || 0}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            updateSection(section.id, {
+                              roofWeight: validateNumber(Number(e.target.value), 0),
+                            })
+                          }
+                          className="flex-1"
+                          placeholder="Enter roof weight"
+                        />
+                        <Select
+                          value={section.roofWeightUnit || "kg"}
+                          onValueChange={(value: string) =>
+                            updateSection(section.id, { roofWeightUnit: value as "N" | "kg" | "lbs" })
+                          }
+                        >
+                          <SelectTrigger className="w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="N">N</SelectItem>
+                            <SelectItem value="lbs">lbs</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Roof weight for this section length
+                      </div>
+                    </div>
+                    <div>
                       <Label htmlFor={`section-primary-${section.id}`}>Primary Load (distributed evenly)</Label>
                       <div className="flex gap-2">
                         <Input
@@ -699,6 +683,27 @@ export default function BeamLoadCalculator() {
                             <SelectItem value="lbs">lbs</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-gray-100 bg-blue-50 p-3 rounded">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Section Summary</div>
+                    <div className="grid grid-cols-3 gap-4 text-xs">
+                      <div>
+                        <span className="text-gray-600">Length: </span>
+                        <span className="font-mono font-semibold">{(section.endPosition - section.startPosition).toFixed(0)} mm</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Baseframe: </span>
+                        <span className="font-mono font-semibold">
+                          {section.baseframeWeight || 0} {section.baseframeWeightUnit || "kg"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Roof: </span>
+                        <span className="font-mono font-semibold">
+                          {section.roofWeight || 0} {section.roofWeightUnit || "kg"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1217,12 +1222,49 @@ export default function BeamLoadCalculator() {
               </div>
               <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="text-2xl font-bold text-gray-600">
-                  {(frameWeight / 9.81).toFixed(1)} kg
+                  {analysisType === "Base Frame" && sections.length > 0
+                    ? (() => {
+                        const totalBaseframe = sections.reduce((sum, s) => {
+                          const baseframeN = s.baseframeWeight
+                            ? s.baseframeWeightUnit === "kg"
+                              ? s.baseframeWeight * 9.81
+                              : s.baseframeWeightUnit === "lbs"
+                              ? s.baseframeWeight * 4.44822
+                              : s.baseframeWeight
+                            : 0
+                          return sum + baseframeN
+                        }, 0)
+                        return (totalBaseframe / 9.81).toFixed(1)
+                      })()
+                    : (frameWeight / 9.81).toFixed(1)}{" "}
+                  kg
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  ({frameWeight.toFixed(0)} N)
+                  ({analysisType === "Base Frame" && sections.length > 0
+                    ? (() => {
+                        const totalBaseframe = sections.reduce((sum, s) => {
+                          const baseframeN = s.baseframeWeight
+                            ? s.baseframeWeightUnit === "kg"
+                              ? s.baseframeWeight * 9.81
+                              : s.baseframeWeightUnit === "lbs"
+                              ? s.baseframeWeight * 4.44822
+                              : s.baseframeWeight
+                            : 0
+                          return sum + baseframeN
+                        }, 0)
+                        return totalBaseframe.toFixed(0)
+                      })()
+                    : frameWeight.toFixed(0)}{" "}
+                  N)
                 </div>
-                <div className="text-sm text-gray-600 mt-1">Structure Weight</div>
+                <div className="text-sm text-gray-600 mt-1">
+                  {analysisType === "Base Frame" ? "Total Baseframe Weight" : "Structure Weight"}
+                </div>
+                {analysisType === "Base Frame" && sections.length > 0 && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    (Sum of all section baseframe weights)
+                  </div>
+                )}
               </div>
               {analysisType === "Base Frame" && (
                 <div className="text-center p-4 bg-teal-50 rounded-lg border border-teal-200">

@@ -4,6 +4,10 @@ export interface Section {
   endPosition: number // mm
   casingWeight: number // Total casing weight for this section
   casingWeightUnit: "N" | "kg" | "lbs"
+  baseframeWeight: number // Baseframe weight for this section (kg)
+  baseframeWeightUnit: "N" | "kg" | "lbs"
+  roofWeight: number // Roof weight for this section (kg)
+  roofWeightUnit: "N" | "kg" | "lbs"
   primaryLoad: number // Primary load for this section (distributed evenly)
   primaryLoadUnit: "N" | "kg" | "lbs"
   name?: string // Optional section name

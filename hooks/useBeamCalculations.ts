@@ -284,7 +284,19 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
         }
       })
 
-      // Process section-level loads (casing weight and primary loads)
+      // Calculate total frame weight from all sections
+      let totalFrameWeightFromSections = 0
+      sections.forEach((section) => {
+        const baseframeWeightN = convertSectionWeightToN(section.baseframeWeight || 0, section.baseframeWeightUnit || "kg")
+        totalFrameWeightFromSections += baseframeWeightN
+      })
+
+      // Use total frame weight from sections if available, otherwise use provided frame weight
+      if (totalFrameWeightFromSections > 0) {
+        frameWeightN = totalFrameWeightFromSections
+      }
+
+      // Process section-level loads (casing weight, baseframe weight, roof weight, and primary loads)
       sections.forEach((section) => {
         const sectionLengthM = (section.endPosition - section.startPosition) / 1000
         const sectionStartM = section.startPosition / 1000
@@ -292,18 +304,18 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
         const sectionCenterX = (sectionStartM + sectionEndM) / 2
         const sectionCenterY = frameWidthM / 2
 
-        // Convert section casing weight to N
+        // Convert all section weights to N
         const casingWeightN = convertSectionWeightToN(section.casingWeight, section.casingWeightUnit)
-
-        // Convert section primary load to N
+        const baseframeWeightN = convertSectionWeightToN(section.baseframeWeight || 0, section.baseframeWeightUnit || "kg")
+        const roofWeightN = convertSectionWeightToN(section.roofWeight || 0, section.roofWeightUnit || "kg")
         const primaryLoadN = convertSectionWeightToN(section.primaryLoad, section.primaryLoadUnit)
 
         // Primary load is distributed evenly across the section area
         const sectionAreaM2 = sectionLengthM * frameWidthM
         const primaryLoadPerM2 = sectionAreaM2 > 0 ? primaryLoadN / sectionAreaM2 : 0
 
-        // Distribute casing weight and primary load to corners using area method
-        const totalSectionLoad = casingWeightN + primaryLoadN
+        // Distribute all section weights (casing + baseframe + roof + primary load) to corners using area method
+        const totalSectionLoad = casingWeightN + baseframeWeightN + roofWeightN + primaryLoadN
 
         // Use area method to distribute to corners
         const areaR1 = (frameLengthM - sectionCenterX) * (frameWidthM - sectionCenterY)
@@ -319,10 +331,11 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
           R4 += totalSectionLoad * (areaR4 / totalArea)
         }
 
-        // Add primary load as distributed load to totalAppliedLoad
+        // Add all section weights to totalAppliedLoad
         totalAppliedLoad += primaryLoadN
-        // Add casing weight to totalAppliedLoad
         totalAppliedLoad += casingWeightN
+        totalAppliedLoad += baseframeWeightN
+        totalAppliedLoad += roofWeightN
       })
 
       // Add frame weight distributed equally to all corners
