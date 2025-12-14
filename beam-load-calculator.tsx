@@ -612,6 +612,33 @@ export default function BeamLoadCalculator() {
                         className="bg-gray-50"
                       />
                     </div>
+                    {index > 0 && (
+                      <div className="col-span-2">
+                        <Label htmlFor={`section-support-${section.id}`}>
+                          Support at Start Position ({section.startPosition} mm)
+                        </Label>
+                        <Select
+                          value={section.supportType || "leg"}
+                          onValueChange={(value: string) => {
+                            updateSection(section.id, { supportType: value as "leg" | "hook" | "none" })
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="leg">Leg Support (Ground Support)</SelectItem>
+                            <SelectItem value="hook">Hook Support (Lifting Prevention)</SelectItem>
+                            <SelectItem value="none">No Support</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {section.supportType === "leg" && "✓ Supports frame on ground at this position"}
+                          {section.supportType === "hook" && "✓ Prevents frame from lifting at this position"}
+                          {(!section.supportType || section.supportType === "none") && "No support at this boundary"}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
