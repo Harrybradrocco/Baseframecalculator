@@ -140,7 +140,7 @@ export const BeamDiagram: React.FC<BeamDiagramProps> = ({ beamLength, leftSuppor
         stroke="black"
         strokeWidth="1"
       />
-      <text x={svgWidth - margin} y={beamY + supportSize + 25} textAnchor="middle" fontSize="12">
+      <text x={margin} y={beamY + supportSize + 25} textAnchor="middle" fontSize="12">
         0
       </text>
       <text x={svgWidth - margin} y={beamY + supportSize + 25} textAnchor="middle" fontSize="12">

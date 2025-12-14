@@ -229,9 +229,14 @@ export function useDiagramCalculations(params: UseDiagramCalculationsParams) {
         deflection.push({ x: Number(x.toFixed(2)), y: Number((delta * 1000).toFixed(4)) }) // mm
       }
     } else {
-      // Base frame - show critical beam analysis with correct uniform load
+      // Base frame - show critical beam analysis with equivalent uniform load
+      // Note: This uses a uniform load approximation for the force diagrams.
+      // The actual corner reactions are calculated using the area method which accounts
+      // for non-uniform load distribution. The force diagrams show the equivalent
+      // uniform load per beam for visualization purposes.
       const criticalLength = Math.max(validFrameLength, validFrameWidth)
       const criticalLengthM = criticalLength / 1000
+      // Total load divided by 4 beams, then by length to get load per meter per beam
       const uniformLoadPerMeter = results.totalAppliedLoad / 4 / criticalLengthM
       // Use momentOfInertia from results (already calculated)
       const materialProps = material === "Custom" ? customMaterial : standardMaterials[material]
@@ -241,9 +246,9 @@ export function useDiagramCalculations(params: UseDiagramCalculationsParams) {
         const x = i * dx
         const xM = x / 1000
         // For simply supported beam with uniform load w (N/m):
-        // Shear V(x) = wL/2 - wx
-        // Moment M(x) = (wL/2)x - (wx²/2) = wx(L-x)/2
-        // Deflection: δ(x) = (w x (L^3 - 2Lx^2 + x^3)) / (24 E I)
+        // Shear V(x) = wL/2 - wx  (linear, max at supports)
+        // Moment M(x) = (wL/2)x - (wx²/2) = wx(L-x)/2  (parabolic, max at center)
+        // Deflection: δ(x) = (w x (L^3 - 2Lx^2 + x^3)) / (24 E I)  (max at center)
         const shear = (uniformLoadPerMeter * criticalLengthM) / 2 - uniformLoadPerMeter * xM
         const moment = (uniformLoadPerMeter * xM * (criticalLengthM - xM)) / 2
         let delta = 0

@@ -109,23 +109,55 @@ export const CornerLoadsDiagram: React.FC<CornerLoadsDiagramProps> = ({
         </g>
       ))}
 
-      {/* Section dividers - Simplified to prevent clutter */}
+      {/* Section dividers and supports - Simplified to prevent clutter */}
       {sections.map((section, index) => {
         const dividerX = margin + section.endPosition * scaleX
+        const supportX = margin + section.startPosition * scaleX
         
         return (
           <g key={section.id}>
-            {/* Simple vertical divider line only */}
-            <line
-              x1={dividerX}
-              y1={frameRect.y - 10}
-              x2={dividerX}
-              y2={frameRect.y + frameRect.height + 5}
-              stroke="#999"
-              strokeWidth="1.5"
-              strokeDasharray="4,4"
-              opacity="0.6"
-            />
+            {/* Simple vertical divider line at section end (if not last section) */}
+            {index < sections.length - 1 && (
+              <line
+                x1={dividerX}
+                y1={frameRect.y - 10}
+                x2={dividerX}
+                y2={frameRect.y + frameRect.height + 5}
+                stroke="#999"
+                strokeWidth="1.5"
+                strokeDasharray="4,4"
+                opacity="0.6"
+              />
+            )}
+            
+            {/* Support indicator at section start (if not first section) */}
+            {index > 0 && section.supportType && section.supportType !== "none" && (
+              <g>
+                {/* Support line */}
+                <line
+                  x1={supportX}
+                  y1={frameRect.y + frameRect.height}
+                  x2={supportX}
+                  y2={frameRect.y + frameRect.height + 15}
+                  stroke={section.supportType === "leg" ? "#0066cc" : "#cc6600"}
+                  strokeWidth="2.5"
+                />
+                {/* Leg support - triangle pointing down */}
+                {section.supportType === "leg" && (
+                  <polygon
+                    points={`${supportX - 6},${frameRect.y + frameRect.height + 15} ${supportX + 6},${frameRect.y + frameRect.height + 15} ${supportX},${frameRect.y + frameRect.height + 22}`}
+                    fill="#0066cc"
+                  />
+                )}
+                {/* Hook support - inverted triangle */}
+                {section.supportType === "hook" && (
+                  <polygon
+                    points={`${supportX - 6},${frameRect.y + frameRect.height + 15} ${supportX + 6},${frameRect.y + frameRect.height + 15} ${supportX},${frameRect.y + frameRect.height + 8}`}
+                    fill="#cc6600"
+                  />
+                )}
+              </g>
+            )}
           </g>
         )
       })}
