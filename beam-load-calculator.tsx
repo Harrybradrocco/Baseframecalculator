@@ -516,8 +516,6 @@ export default function BeamLoadCalculator() {
                   <div className="text-xs text-gray-500 mt-1">
                     Frame weight should be entered in kg
                   </div>
-                    </Select>
-                  </div>
                 </div>
                 <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
                   <Info className="w-3 h-3 inline mr-1" />
