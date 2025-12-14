@@ -432,9 +432,54 @@ export default function BeamLoadCalculator() {
                 </div>
                 <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
                   <Info className="w-3 h-3 inline mr-1" />
-                  Frame weight and roof weight should be entered per section in the Sections Management section below.
-                  The total frame weight will be calculated as the sum of all section baseframe weights.
+                  <strong>Frame weight and roof weight should be entered per section</strong> in the Sections Management section below.
+                  The total frame weight will be automatically calculated as the sum of all section baseframe weights.
                 </div>
+                {sections.length > 0 && (
+                  <div className="text-xs text-gray-600 bg-green-50 p-2 rounded border border-green-200">
+                    <div className="font-semibold mb-1">Current Totals (from {sections.length} section{sections.length !== 1 ? "s" : ""}):</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-gray-600">Total Baseframe: </span>
+                        <span className="font-mono font-semibold">
+                          {sections
+                            .reduce((sum, s) => {
+                              const baseframe = s.baseframeWeight || 0
+                              const unit = s.baseframeWeightUnit || "kg"
+                              // Convert all to kg for display
+                              if (unit === "N") {
+                                return sum + baseframe / 9.81
+                              } else if (unit === "lbs") {
+                                return sum + baseframe / 2.20462
+                              }
+                              return sum + baseframe
+                            }, 0)
+                            .toFixed(1)}{" "}
+                          kg
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Total Roof: </span>
+                        <span className="font-mono font-semibold">
+                          {sections
+                            .reduce((sum, s) => {
+                              const roof = s.roofWeight || 0
+                              const unit = s.roofWeightUnit || "kg"
+                              // Convert all to kg for display
+                              if (unit === "N") {
+                                return sum + roof / 9.81
+                              } else if (unit === "lbs") {
+                                return sum + roof / 2.20462
+                              }
+                              return sum + roof
+                            }, 0)
+                            .toFixed(1)}{" "}
+                          kg
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </CardContent>
