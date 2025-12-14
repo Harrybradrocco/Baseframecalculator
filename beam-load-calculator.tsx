@@ -69,7 +69,6 @@ export default function BeamLoadCalculator() {
 
   // Use calculation hooks
   const { calculateResults } = useBeamCalculations({
-    frameWeight,
     analysisType,
     beamLength,
     frameLength,
