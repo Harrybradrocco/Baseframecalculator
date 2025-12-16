@@ -143,31 +143,75 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
 
   // Helper to capture a DOM node as PNG using svgToPngDataUrl
   const captureSVGAsImage = async (svgId: string, fallbackWidth: number, fallbackHeight: number) => {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // Wait a bit for any pending renders
+    await new Promise(resolve => setTimeout(resolve, 300))
     
-    const svg = document.getElementById(svgId) as SVGSVGElement | null
+    // Try to find the SVG element
+    let svg = document.getElementById(svgId) as SVGSVGElement | null
+    
+    // If not found by ID, try to find it in the DOM tree
+    if (!svg) {
+      // Search for SVG elements with the ID
+      const allSvgs = document.querySelectorAll('svg')
+      for (const s of allSvgs) {
+        if (s.id === svgId) {
+          svg = s
+          break
+        }
+      }
+    }
+    
     if (!svg) {
       console.error(`SVG with id '${svgId}' not found in DOM`)
       throw new Error(`SVG with id '${svgId}' not found in DOM. Make sure the chart is visible on the page before downloading the PDF.`)
     }
     
+    // Ensure SVG is visible and has dimensions
+    const parent = svg.parentElement
+    if (parent) {
+      // Make sure parent is visible
+      parent.style.display = 'block'
+      parent.style.visibility = 'visible'
+      parent.style.opacity = '1'
+    }
+    
+    // Scroll into view and wait for render
     svg.scrollIntoView({ behavior: 'instant', block: 'center' })
-    await new Promise(resolve => setTimeout(resolve, 200))
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    // Force a reflow to ensure rendering
+    void svg.offsetHeight
+    
+    // Wait a bit more for any animations or renders
+    await new Promise(resolve => setTimeout(resolve, 300))
     
     const rect = svg.getBoundingClientRect()
     if (rect.width === 0 || rect.height === 0) {
-      console.warn(`SVG with id '${svgId}' has zero dimensions. It may not be visible.`)
+      console.warn(`SVG with id '${svgId}' has zero dimensions. Using fallback dimensions.`)
     }
     
+    // Get dimensions from SVG attributes first, then from bounding rect
     let width = fallbackWidth
     let height = fallbackHeight
-    if (svg.hasAttribute("width")) width = Number(svg.getAttribute("width")) || fallbackWidth
-    if (svg.hasAttribute("height")) height = Number(svg.getAttribute("height")) || fallbackHeight
     
+    if (svg.hasAttribute("width")) {
+      const attrWidth = Number(svg.getAttribute("width"))
+      if (!isNaN(attrWidth) && attrWidth > 0) width = attrWidth
+    }
+    if (svg.hasAttribute("height")) {
+      const attrHeight = Number(svg.getAttribute("height"))
+      if (!isNaN(attrHeight) && attrHeight > 0) height = attrHeight
+    }
+    
+    // Use bounding rect if it has valid dimensions
     if (rect.width > 0 && rect.height > 0) {
       width = rect.width
       height = rect.height
     }
+    
+    // Ensure minimum dimensions
+    if (width <= 0) width = fallbackWidth
+    if (height <= 0) height = fallbackHeight
     
     try {
       const dataUrl = await svgToPngDataUrl(svg, width, height)
@@ -402,6 +446,10 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
   }
 
   // 4. STRUCTURAL DIAGRAMS
+  // Scroll to top to ensure we can find diagrams
+  window.scrollTo(0, 0)
+  await new Promise(resolve => setTimeout(resolve, 300))
+  
   pdf.addPage()
   yOffset = 40
   yOffset = addSectionHeader("4. Structural Diagrams", margin, yOffset)
@@ -413,16 +461,26 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
   let structureImg: string | null = null
   try {
     if (analysisType === "Simple Beam") {
-      const svg = document.getElementById("beam-structure-diagram") as SVGSVGElement | null
+      // Wait a bit to ensure page is ready
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      let svg = document.getElementById("beam-structure-diagram") as SVGSVGElement | null
       if (!svg) {
-        yOffset = addWrappedText("[Beam Structure Diagram - Not found in DOM]", margin, yOffset, contentWidth, 6, 9)
+        // Try alternative search
+        const allSvgs = document.querySelectorAll('svg[id="beam-structure-diagram"]')
+        if (allSvgs.length > 0) {
+          svg = allSvgs[0] as SVGSVGElement
+        }
+      }
+      
+      if (!svg) {
+        console.warn("Beam Structure Diagram not found, adding placeholder text")
+        yOffset = addWrappedText("[Beam Structure Diagram - Not found in DOM. Please ensure the diagram is visible before generating PDF.]", margin, yOffset, contentWidth, 6, 9)
         yOffset += 10
       } else {
-        svg.scrollIntoView({ behavior: 'instant', block: 'center' })
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const rect = svg.getBoundingClientRect()
-        const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 500)
-        const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 250)
+        // Use the improved capture function
+        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 500
+        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 250
         structureImg = await captureSVGAsImage("beam-structure-diagram", origWidth, origHeight)
         if (!structureImg) {
           yOffset = addWrappedText("[Beam Structure Diagram - Unable to capture]", margin, yOffset, contentWidth, 6, 9)
@@ -453,16 +511,26 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
         }
       }
     } else {
-      const frameSvg = document.getElementById("frame-structure-diagram") as SVGSVGElement | null
+      // Wait a bit to ensure page is ready
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      let frameSvg = document.getElementById("frame-structure-diagram") as SVGSVGElement | null
       if (!frameSvg) {
-        yOffset = addWrappedText("[Frame Structure Diagram - Not found in DOM]", margin, yOffset, contentWidth, 6, 9)
+        // Try alternative search
+        const allSvgs = document.querySelectorAll('svg[id="frame-structure-diagram"]')
+        if (allSvgs.length > 0) {
+          frameSvg = allSvgs[0] as SVGSVGElement
+        }
+      }
+      
+      if (!frameSvg) {
+        console.warn("Frame Structure Diagram not found, adding placeholder text")
+        yOffset = addWrappedText("[Frame Structure Diagram - Not found in DOM. Please ensure the diagram is visible before generating PDF.]", margin, yOffset, contentWidth, 6, 9)
         yOffset += 10
       } else {
-        frameSvg.scrollIntoView({ behavior: 'instant', block: 'center' })
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const rect = frameSvg.getBoundingClientRect()
-        const origWidth = rect.width > 0 ? rect.width : (frameSvg.hasAttribute("width") ? Number(frameSvg.getAttribute("width")) : 500)
-        const origHeight = rect.height > 0 ? rect.height : (frameSvg.hasAttribute("height") ? Number(frameSvg.getAttribute("height")) : 450)
+        // Use the improved capture function
+        const origWidth = frameSvg.hasAttribute("width") ? Number(frameSvg.getAttribute("width")) : 500
+        const origHeight = frameSvg.hasAttribute("height") ? Number(frameSvg.getAttribute("height")) : 450
         structureImg = await captureSVGAsImage("frame-structure-diagram", origWidth, origHeight)
         if (!structureImg) {
           yOffset = addWrappedText("[Frame Structure Diagram - Unable to capture]", margin, yOffset, contentWidth, 6, 9)
@@ -502,16 +570,26 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
   // Corner Loads Diagram (for Base Frame only)
   if (analysisType === "Base Frame") {
     try {
-      const svg = document.getElementById("corner-loads-diagram") as SVGSVGElement | null
+      // Wait a bit to ensure page is ready
+      await new Promise(resolve => setTimeout(resolve, 200))
+      
+      let svg = document.getElementById("corner-loads-diagram") as SVGSVGElement | null
       if (!svg) {
-        yOffset = addWrappedText("[Corner Loads Diagram - Not found in DOM]", margin, yOffset, contentWidth, 6, 9)
+        // Try alternative search
+        const allSvgs = document.querySelectorAll('svg[id="corner-loads-diagram"]')
+        if (allSvgs.length > 0) {
+          svg = allSvgs[0] as SVGSVGElement
+        }
+      }
+      
+      if (!svg) {
+        console.warn("Corner Loads Diagram not found, adding placeholder text")
+        yOffset = addWrappedText("[Corner Loads Diagram - Not found in DOM. Please ensure the diagram is visible before generating PDF.]", margin, yOffset, contentWidth, 6, 9)
         yOffset += 10
       } else {
-        svg.scrollIntoView({ behavior: 'instant', block: 'center' })
-        await new Promise(resolve => setTimeout(resolve, 500))
-        const rect = svg.getBoundingClientRect()
-        const origWidth = rect.width > 0 ? rect.width : (svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 700)
-        const origHeight = rect.height > 0 ? rect.height : (svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 520)
+        // Use the improved capture function
+        const origWidth = svg.hasAttribute("width") ? Number(svg.getAttribute("width")) : 700
+        const origHeight = svg.hasAttribute("height") ? Number(svg.getAttribute("height")) : 520
         const aspect = origHeight / origWidth
         const maxDiagramWidth = contentWidth * 0.9
         const diagramWidth = Math.min(maxDiagramWidth, 160)

@@ -19,6 +19,7 @@ import type { Section, Load } from "../types"
 import {
   parseWeightImportJSON,
   parseWeightImportCSV,
+  parseWeightImportTable,
   convertImportedSections,
   convertImportedComponents,
   generateLoadsFromTotalWeights,
@@ -43,7 +44,7 @@ export function WeightImportDialog({
 }: WeightImportDialogProps) {
   const [open, setOpen] = useState(false)
   const [importText, setImportText] = useState("")
-  const [importType, setImportType] = useState<"json" | "csv">("json")
+  const [importType, setImportType] = useState<"json" | "csv" | "table">("json")
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<{ sections: Section[]; loads: Load[] } | null>(null)
 
@@ -68,8 +69,11 @@ export function WeightImportDialog({
 
       if (importType === "json") {
         importData = parseWeightImportJSON(importText)
-      } else {
+      } else if (importType === "csv") {
         importData = parseWeightImportCSV(importText)
+      } else {
+        // Table format
+        importData = parseWeightImportTable(importText)
       }
 
       // Convert to app formats
@@ -136,7 +140,7 @@ export function WeightImportDialog({
         <DialogHeader>
           <DialogTitle>Import Weight Information</DialogTitle>
           <DialogDescription>
-            Import weight data from JSON or CSV files to automatically populate sections and loads.
+            Import weight data from JSON, CSV, or table format to automatically populate sections and loads.
           </DialogDescription>
         </DialogHeader>
 
@@ -168,6 +172,18 @@ export function WeightImportDialog({
             >
               CSV
             </Button>
+            <Button
+              variant={importType === "table" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setImportType("table")
+                setImportText("")
+                setPreview(null)
+                setError(null)
+              }}
+            >
+              Table
+            </Button>
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate} className="ml-auto">
               <Download className="w-4 h-4 mr-2" />
               Download Template
@@ -181,7 +197,7 @@ export function WeightImportDialog({
               <input
                 id="file-upload"
                 type="file"
-                accept={importType === "json" ? ".json" : ".csv"}
+                accept={importType === "json" ? ".json" : importType === "csv" ? ".csv" : ".csv,.txt"}
                 onChange={handleFileUpload}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
@@ -202,7 +218,9 @@ export function WeightImportDialog({
               placeholder={
                 importType === "json"
                   ? "Paste JSON data here..."
-                  : "Paste CSV data here..."
+                  : importType === "csv"
+                  ? "Paste CSV data here..."
+                  : "Paste table data here...\n\nExample:\nSection No, Section Code, Function Code, Weight of function (kg), Weight of section (kg)\n1, Casing Length 1641 mm, , , 446\n1, , Casing, 199,\n1, , Fan, 47,"
               }
               className="mt-2 font-mono text-sm"
               rows={10}

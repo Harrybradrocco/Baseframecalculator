@@ -342,6 +342,152 @@ export function generateLoadsFromTotalWeights(
 }
 
 /**
+ * Parse table format weight data (from structured tables like the weight breakdown table)
+ * Expected format (CSV-like with columns):
+ * Section No, Section Code, Function Code, Weight of function (kg), Weight of section (kg)
+ * 
+ * Example:
+ * 1, Casing Length 1641 mm, , , 446
+ * 1, , Casing, 199,
+ * 1, , Damper, 11,
+ * 2, Casing Length 2941 mm, , , 539
+ * 3, Baseframe Length 1641 mm, , , 63
+ * 4, Baseframe Length 2941 mm, , , 127
+ */
+export function parseWeightImportTable(tableString: string): WeightImportData {
+  const lines = tableString.split("\n").filter((line) => line.trim().length > 0)
+  if (lines.length < 2) {
+    throw new Error("Table must have at least a header row and one data row")
+  }
+
+  // Parse header to find column indices
+  const headers = lines[0].split(/\t|,|\|/).map((h) => h.trim().toLowerCase())
+  const sectionNoIndex = headers.findIndex((h) => h.includes("section") && (h.includes("no") || h.includes("#")))
+  const sectionCodeIndex = headers.findIndex((h) => h.includes("section") && h.includes("code"))
+  const functionCodeIndex = headers.findIndex((h) => h.includes("function") && h.includes("code"))
+  const functionWeightIndex = headers.findIndex((h) => h.includes("weight") && h.includes("function"))
+  const sectionWeightIndex = headers.findIndex((h) => h.includes("weight") && h.includes("section"))
+
+  if (sectionNoIndex === -1) {
+    throw new Error("Table must have a 'Section No' column")
+  }
+
+  const sections: WeightImportSection[] = []
+  const components: WeightImportComponent[] = []
+  const sectionMap = new Map<number, { section: WeightImportSection; startPos: number }>()
+  let currentPosition = 0
+
+  // First pass: identify sections and their lengths
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseTableLine(lines[i])
+    const sectionNo = parseInt(values[sectionNoIndex]?.trim() || "0")
+    const sectionCode = values[sectionCodeIndex]?.trim() || ""
+    const sectionWeight = parseFloat(values[sectionWeightIndex]?.trim() || "0")
+    const functionCode = values[functionCodeIndex]?.trim() || ""
+    const functionWeight = parseFloat(values[functionWeightIndex]?.trim() || "0")
+
+    // If this is a section header row (has Section Code with length info)
+    if (sectionCode && (sectionCode.includes("Casing Length") || sectionCode.includes("Baseframe Length"))) {
+      // Extract length from section code (e.g., "Casing Length 1641 mm" -> 1641)
+      const lengthMatch = sectionCode.match(/(\d+(?:\.\d+)?)\s*mm/i)
+      const length = lengthMatch ? parseFloat(lengthMatch[1]) : 0
+
+      if (length > 0 && sectionNo > 0) {
+        const section: WeightImportSection = {
+          name: `Section ${sectionNo}`,
+          startPosition: currentPosition,
+          length: length,
+          endPosition: currentPosition + length,
+        }
+
+        // Determine if this is casing or baseframe
+        if (sectionCode.includes("Casing Length")) {
+          section.casingWeight = sectionWeight > 0 ? sectionWeight : undefined
+          section.casingWeightUnit = "kg"
+        } else if (sectionCode.includes("Baseframe Length")) {
+          section.baseframeWeight = sectionWeight > 0 ? sectionWeight : undefined
+          section.baseframeWeightUnit = "kg"
+        }
+
+        sectionMap.set(sectionNo, { section, startPos: currentPosition })
+        sections.push(section)
+        currentPosition += length
+      }
+    }
+  }
+
+  // Second pass: identify components within sections
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseTableLine(lines[i])
+    const sectionNo = parseInt(values[sectionNoIndex]?.trim() || "0")
+    const functionCode = values[functionCodeIndex]?.trim() || ""
+    const functionWeight = parseFloat(values[functionWeightIndex]?.trim() || "0")
+
+    // If this is a component row (has Function Code and weight)
+    if (functionCode && functionWeight > 0 && sectionNo > 0) {
+      const sectionInfo = sectionMap.get(sectionNo)
+      if (sectionInfo) {
+        // Calculate position within section (distribute components evenly for now)
+        // In a real scenario, you might want to specify exact positions
+        const sectionLength = sectionInfo.section.length || 1000
+        const componentPosition = sectionLength / 2 // Center of section as default
+
+        const component: WeightImportComponent = {
+          name: functionCode,
+          sectionIndex: sections.indexOf(sectionInfo.section),
+          position: componentPosition,
+          weight: functionWeight,
+          weightUnit: "kg",
+          loadType: "Point Load",
+        }
+
+        components.push(component)
+      }
+    }
+  }
+
+  // Calculate total frame length
+  const totalLength = sections.reduce((sum, s) => sum + (s.length || 0), 0)
+
+  return validateImportData({
+    frameDimensions: {
+      length: totalLength,
+      units: "mm",
+    },
+    sections,
+    components,
+  })
+}
+
+/**
+ * Parse a table line (handles tab, comma, or pipe delimiters)
+ */
+function parseTableLine(line: string): string[] {
+  // Try different delimiters
+  let delimiter = ","
+  if (line.includes("\t")) delimiter = "\t"
+  else if (line.includes("|")) delimiter = "|"
+
+  const values: string[] = []
+  let current = ""
+  let inQuotes = false
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      inQuotes = !inQuotes
+    } else if (char === delimiter && !inQuotes) {
+      values.push(current.trim())
+      current = ""
+    } else {
+      current += char
+    }
+  }
+  values.push(current.trim())
+  return values
+}
+
+/**
  * Create example JSON template for weight import
  */
 export function createWeightImportTemplate(): string {
