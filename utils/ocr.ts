@@ -16,23 +16,57 @@ export async function extractTextFromImage(
 ): Promise<string> {
   let worker: Worker | null = null
   try {
-    worker = await createWorker('eng')
+    console.log('Starting OCR worker creation...')
+    if (onProgress) onProgress(5)
     
-    const { data: { text } } = await worker.recognize(imageFile, {
+    // Create worker with error handling
+    worker = await createWorker('eng', 1, {
       logger: (m) => {
-        if (m.status === 'recognizing text' && onProgress) {
-          const progress = Math.round(m.progress * 100)
-          onProgress(progress)
+        console.log('OCR progress:', m)
+        if (onProgress) {
+          if (m.status === 'loading tesseract core') {
+            onProgress(10)
+          } else if (m.status === 'initializing tesseract') {
+            onProgress(20)
+          } else if (m.status === 'loading language traineddata') {
+            onProgress(30)
+          } else if (m.status === 'initializing api') {
+            onProgress(40)
+          } else if (m.status === 'recognizing text') {
+            const progress = 40 + Math.round(m.progress * 60) // 40-100%
+            onProgress(progress)
+          }
         }
       },
     })
     
+    console.log('Worker created, starting recognition...')
+    if (onProgress) onProgress(50)
+    
+    // Add timeout to prevent hanging
+    const recognitionPromise = worker.recognize(imageFile)
+    const timeoutPromise = new Promise<never>((_, reject) => 
+      setTimeout(() => reject(new Error('OCR timeout after 60 seconds')), 60000)
+    )
+    
+    const { data: { text } } = await Promise.race([recognitionPromise, timeoutPromise])
+    
+    console.log('OCR completed, extracted text length:', text.length)
+    if (onProgress) onProgress(100)
+    
     return text
   } catch (error) {
-    throw new Error(`OCR failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    console.error('OCR error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    throw new Error(`OCR failed: ${errorMessage}. Make sure tesseract.js is properly installed.`)
   } finally {
     if (worker) {
-      await worker.terminate()
+      try {
+        await worker.terminate()
+        console.log('OCR worker terminated')
+      } catch (err) {
+        console.warn('Error terminating worker:', err)
+      }
     }
   }
 }

@@ -63,19 +63,25 @@ export function WeightImportDialog({
       setPreview(null)
       
       try {
+        console.log('Starting OCR processing for file:', file.name, file.type, file.size)
         // Process image with OCR
         const extractedText = await processImageWithOCR(file, (progress) => {
+          console.log('OCR progress:', progress)
           setOcrProgress(progress)
         })
+        console.log('OCR completed, extracted text:', extractedText.substring(0, 200))
         setImportText(extractedText)
         setImportType("table") // OCR results are treated as table format
         setOcrProgress(100)
+        setError(null) // Clear any previous errors
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to process image with OCR")
+        console.error('OCR processing error:', err)
+        const errorMessage = err instanceof Error ? err.message : "Failed to process image with OCR"
+        setError(`OCR Error: ${errorMessage}. Please check the browser console for details.`)
         setImportText("")
+        setOcrProgress(0)
       } finally {
         setIsProcessingOCR(false)
-        setOcrProgress(0)
       }
     } else {
       // Regular text file
