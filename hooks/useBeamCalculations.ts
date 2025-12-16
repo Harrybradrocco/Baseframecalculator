@@ -27,6 +27,8 @@ interface UseBeamCalculationsParams {
   frameWeight: number // User-provided frame weight in N (for Base Frame) or calculated (for Simple Beam)
   setFrameWeight: (weight: number) => void
   setResults: (results: Results) => void
+  totalRoofWeight: number // Total roof weight for entire frame
+  totalRoofWeightUnit: "N" | "kg" | "lbs"
 }
 
 export function useBeamCalculations(params: UseBeamCalculationsParams) {
@@ -52,6 +54,8 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
     frameWeight: providedFrameWeight,
     setFrameWeight,
     setResults,
+    totalRoofWeight,
+    totalRoofWeightUnit,
   } = params
 
   const calculateResults = useCallback(() => {
@@ -296,9 +300,14 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
         frameWeightN = totalFrameWeightFromSections
       }
 
-      // Process section-level loads (casing weight, baseframe weight, roof weight, and primary loads)
+      // Calculate roof weight per unit length from total roof weight
+      const totalRoofWeightN = convertSectionWeightToN(totalRoofWeight, totalRoofWeightUnit)
+      const roofWeightPerMM = frameLength > 0 ? totalRoofWeightN / frameLength : 0
+
+      // Process section-level loads (casing weight, baseframe weight, and roof weight)
       sections.forEach((section) => {
         const sectionLengthM = (section.endPosition - section.startPosition) / 1000
+        const sectionLengthMM = section.endPosition - section.startPosition
         const sectionStartM = section.startPosition / 1000
         const sectionEndM = section.endPosition / 1000
         const sectionCenterX = (sectionStartM + sectionEndM) / 2
@@ -307,15 +316,12 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
         // Convert all section weights to N
         const casingWeightN = convertSectionWeightToN(section.casingWeight, section.casingWeightUnit)
         const baseframeWeightN = convertSectionWeightToN(section.baseframeWeight || 0, section.baseframeWeightUnit || "kg")
-        const roofWeightN = convertSectionWeightToN(section.roofWeight || 0, section.roofWeightUnit || "kg")
-        const primaryLoadN = convertSectionWeightToN(section.primaryLoad, section.primaryLoadUnit)
+        
+        // Calculate roof weight for this section based on total roof weight and section length
+        const sectionRoofWeightN = roofWeightPerMM * sectionLengthMM
 
-        // Primary load is distributed evenly across the section area
-        const sectionAreaM2 = sectionLengthM * frameWidthM
-        const primaryLoadPerM2 = sectionAreaM2 > 0 ? primaryLoadN / sectionAreaM2 : 0
-
-        // Distribute all section weights (casing + baseframe + roof + primary load) to corners using area method
-        const totalSectionLoad = casingWeightN + baseframeWeightN + roofWeightN + primaryLoadN
+        // Distribute all section weights (casing + baseframe + roof) to corners using area method
+        const totalSectionLoad = casingWeightN + baseframeWeightN + sectionRoofWeightN
 
         // Use area method to distribute to corners
         const areaR1 = (frameLengthM - sectionCenterX) * (frameWidthM - sectionCenterY)
@@ -332,10 +338,9 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
         }
 
         // Add all section weights to totalAppliedLoad
-        totalAppliedLoad += primaryLoadN
         totalAppliedLoad += casingWeightN
         totalAppliedLoad += baseframeWeightN
-        totalAppliedLoad += roofWeightN
+        totalAppliedLoad += sectionRoofWeightN
       })
 
       // Add frame weight distributed equally to all corners
@@ -475,6 +480,8 @@ export function useBeamCalculations(params: UseBeamCalculationsParams) {
     providedFrameWeight,
     setFrameWeight,
     setResults,
+    totalRoofWeight,
+    totalRoofWeightUnit,
   ])
 
   return { calculateResults }

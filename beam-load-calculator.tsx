@@ -18,6 +18,7 @@ import { validateNumber, validatePositive } from "./utils/validation"
 import { BeamDiagram, FrameDiagram, CornerLoadsDiagram } from "./components/diagrams"
 import { HelpDialog } from "./components/HelpDialog"
 import { BeamCrossSectionImage } from "./components/BeamCrossSectionImage"
+import { WeightImportDialog } from "./components/WeightImportDialog"
 import { useBeamCalculations } from "./hooks/useBeamCalculations"
 import { useDiagramCalculations } from "./hooks/useDiagramCalculations"
 import { generatePDF } from "./utils/pdfGeneration"
@@ -49,6 +50,8 @@ export default function BeamLoadCalculator() {
   const [diameter, setDiameter] = useState(100)
   const [beamDensity, setBeamDensity] = useState(7850)
   const [frameWeight, setFrameWeight] = useState(0) // Calculated total frame weight in N (sum of all section baseframe weights)
+  const [totalRoofWeight, setTotalRoofWeight] = useState(0) // Total roof weight for entire frame (kg)
+  const [totalRoofWeightUnit, setTotalRoofWeightUnit] = useState<"N" | "kg" | "lbs">("kg")
   const [results, setResults] = useState({
     maxShearForce: 0,
     maxBendingMoment: 0,
@@ -89,6 +92,8 @@ export default function BeamLoadCalculator() {
     frameWeight,
     setFrameWeight,
     setResults,
+    totalRoofWeight,
+    totalRoofWeightUnit,
   })
 
   const { calculateDiagrams } = useDiagramCalculations({
@@ -228,8 +233,6 @@ export default function BeamLoadCalculator() {
       baseframeWeightUnit: "kg",
       roofWeight: 0,
       roofWeightUnit: "kg",
-      primaryLoad: 0,
-      primaryLoadUnit: "N",
       name: `Section ${sections.length + 1}`,
       supportType: sections.length > 0 ? "leg" : undefined, // Add support at start if not first section
     }
@@ -254,6 +257,36 @@ export default function BeamLoadCalculator() {
     )
   }
 
+
+  // Update section roof weights when total roof weight or frame length changes
+  // Only update if sections exist and we're in Base Frame mode
+  useEffect(() => {
+    if (analysisType === "Base Frame" && frameLength > 0 && sections.length > 0) {
+      setSections((prevSections) => {
+        return prevSections.map((section) => {
+          const sectionLength = section.endPosition - section.startPosition
+          const sectionLengthRatio = sectionLength / frameLength
+          
+          // Convert total roof weight to kg for calculation
+          let totalRoofWeightKg = totalRoofWeight
+          if (totalRoofWeightUnit === "N") {
+            totalRoofWeightKg = totalRoofWeight / 9.81
+          } else if (totalRoofWeightUnit === "lbs") {
+            totalRoofWeightKg = totalRoofWeight / 2.20462
+          }
+          
+          // Calculate section roof weight
+          const sectionRoofWeightKg = totalRoofWeightKg * sectionLengthRatio
+          
+          return {
+            ...section,
+            roofWeight: sectionRoofWeightKg,
+            roofWeightUnit: "kg",
+          }
+        })
+      })
+    }
+  }, [totalRoofWeight, totalRoofWeightUnit, frameLength, analysisType, sections.length])
 
   useEffect(() => {
     calculateResults()
@@ -464,9 +497,41 @@ export default function BeamLoadCalculator() {
                     className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Label htmlFor="total-roof-weight" className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-gray-500" />
+                    Total Roof Weight
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      id="total-roof-weight"
+                      value={totalRoofWeight}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setTotalRoofWeight(validateNumber(Number(e.target.value), 0))
+                      }
+                      className="border-gray-300 focus:border-blue-500 focus:ring-blue-500 flex-1"
+                      placeholder="Enter total roof weight"
+                    />
+                    <Select
+                      value={totalRoofWeightUnit}
+                      onValueChange={(value: string) => setTotalRoofWeightUnit(value as "N" | "kg" | "lbs")}
+                    >
+                      <SelectTrigger className="w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="N">N</SelectItem>
+                        <SelectItem value="lbs">lbs</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="text-xs text-gray-500 bg-blue-50 p-2 rounded">
                   <Info className="w-3 h-3 inline mr-1" />
-                  <strong>Frame weight and roof weight should be entered per section</strong> in the Sections Management section below.
+                  <strong>Total roof weight</strong> will be automatically distributed to sections based on their length.
+                  <strong> Frame weight should be entered per section</strong> in the Sections Management section below.
                   The total frame weight will be automatically calculated as the sum of all section baseframe weights.
                 </div>
                 {sections.length > 0 && (
@@ -495,19 +560,15 @@ export default function BeamLoadCalculator() {
                       <div>
                         <span className="text-gray-600">Total Roof: </span>
                         <span className="font-mono font-semibold">
-                          {sections
-                            .reduce((sum, s) => {
-                              const roof = s.roofWeight || 0
-                              const unit = s.roofWeightUnit || "kg"
-                              // Convert all to kg for display
-                              if (unit === "N") {
-                                return sum + roof / 9.81
-                              } else if (unit === "lbs") {
-                                return sum + roof / 2.20462
-                              }
-                              return sum + roof
-                            }, 0)
-                            .toFixed(1)}{" "}
+                          {(() => {
+                            // Convert total roof weight to kg for display
+                            if (totalRoofWeightUnit === "N") {
+                              return (totalRoofWeight / 9.81).toFixed(1)
+                            } else if (totalRoofWeightUnit === "lbs") {
+                              return (totalRoofWeight / 2.20462).toFixed(1)
+                            }
+                            return totalRoofWeight.toFixed(1)
+                          })()}{" "}
                           kg
                         </span>
                       </div>
@@ -528,7 +589,7 @@ export default function BeamLoadCalculator() {
                 Sections Management
               </CardTitle>
               <CardDescription className="text-sm">
-                Define sections with casing weight and primary loads. Section dividers will appear in diagrams.
+                Define sections with casing weight and baseframe weight. Roof weight is automatically calculated from total roof weight.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 p-6">
@@ -536,10 +597,22 @@ export default function BeamLoadCalculator() {
                 <span className="text-sm text-gray-600">
                   {sections.length} section{sections.length !== 1 ? "s" : ""} defined
                 </span>
-                <Button onClick={addSection} variant="outline" size="sm" disabled={sections.length >= 10}>
-                  <Package className="w-4 h-4 mr-2" />
-                  Add Section
-                </Button>
+                <div className="flex gap-2">
+                  <WeightImportDialog
+                    onImport={(importedSections, importedLoads) => {
+                      setSections(importedSections)
+                      setLoads(importedLoads)
+                    }}
+                    frameLength={frameLength}
+                    frameWidth={frameWidth}
+                    existingSections={sections}
+                    existingLoads={loads}
+                  />
+                  <Button onClick={addSection} variant="outline" size="sm" disabled={sections.length >= 10}>
+                    <Package className="w-4 h-4 mr-2" />
+                    Add Section
+                  </Button>
+                </div>
               </div>
 
               {sections.map((section: Section, index: number) => (
@@ -699,27 +772,37 @@ export default function BeamLoadCalculator() {
                       </div>
                     </div>
                     <div>
-                      <Label htmlFor={`section-roof-${section.id}`}>Roof Weight (kg)</Label>
+                      <Label htmlFor={`section-roof-${section.id}`}>Roof Weight (calculated)</Label>
                       <div className="flex gap-2">
                         <Input
                           type="number"
                           id={`section-roof-${section.id}`}
-                          value={section.roofWeight || 0}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            updateSection(section.id, {
-                              roofWeight: validateNumber(Number(e.target.value), 0),
-                            })
-                          }
-                          className="flex-1"
-                          placeholder="Enter roof weight"
+                          value={(() => {
+                            // Calculate roof weight for this section based on total roof weight and section length
+                            if (totalRoofWeight === 0 || frameLength === 0) return 0
+                            const sectionLength = section.endPosition - section.startPosition
+                            const sectionLengthRatio = sectionLength / frameLength
+                            
+                            // Convert total roof weight to kg for calculation
+                            let totalRoofWeightKg = totalRoofWeight
+                            if (totalRoofWeightUnit === "N") {
+                              totalRoofWeightKg = totalRoofWeight / 9.81
+                            } else if (totalRoofWeightUnit === "lbs") {
+                              totalRoofWeightKg = totalRoofWeight / 2.20462
+                            }
+                            
+                            // Calculate section roof weight
+                            const sectionRoofWeightKg = totalRoofWeightKg * sectionLengthRatio
+                            return sectionRoofWeightKg.toFixed(2)
+                          })()}
+                          readOnly
+                          className="flex-1 bg-gray-50"
                         />
                         <Select
                           value={section.roofWeightUnit || "kg"}
-                          onValueChange={(value: string) =>
-                            updateSection(section.id, { roofWeightUnit: value as "N" | "kg" | "lbs" })
-                          }
+                          disabled
                         >
-                          <SelectTrigger className="w-24">
+                          <SelectTrigger className="w-24 bg-gray-50">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -730,38 +813,7 @@ export default function BeamLoadCalculator() {
                         </Select>
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
-                        Roof weight for this section length
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor={`section-primary-${section.id}`}>Primary Load (distributed evenly)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="number"
-                          id={`section-primary-${section.id}`}
-                          value={section.primaryLoad}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            updateSection(section.id, {
-                              primaryLoad: validateNumber(Number(e.target.value), 0),
-                            })
-                          }
-                          className="flex-1"
-                        />
-                        <Select
-                          value={section.primaryLoadUnit}
-                          onValueChange={(value: string) =>
-                            updateSection(section.id, { primaryLoadUnit: value as "N" | "kg" | "lbs" })
-                          }
-                        >
-                          <SelectTrigger className="w-24">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="N">N</SelectItem>
-                            <SelectItem value="kg">kg</SelectItem>
-                            <SelectItem value="lbs">lbs</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        Automatically calculated from total roof weight based on section length
                       </div>
                     </div>
                   </div>
@@ -781,7 +833,24 @@ export default function BeamLoadCalculator() {
                       <div>
                         <span className="text-gray-600">Roof: </span>
                         <span className="font-mono font-semibold">
-                          {section.roofWeight || 0} {section.roofWeightUnit || "kg"}
+                          {(() => {
+                            // Calculate roof weight for this section
+                            if (totalRoofWeight === 0 || frameLength === 0) return "0 kg"
+                            const sectionLength = section.endPosition - section.startPosition
+                            const sectionLengthRatio = sectionLength / frameLength
+                            
+                            // Convert total roof weight to kg for calculation
+                            let totalRoofWeightKg = totalRoofWeight
+                            if (totalRoofWeightUnit === "N") {
+                              totalRoofWeightKg = totalRoofWeight / 9.81
+                            } else if (totalRoofWeightUnit === "lbs") {
+                              totalRoofWeightKg = totalRoofWeight / 2.20462
+                            }
+                            
+                            // Calculate section roof weight
+                            const sectionRoofWeightKg = totalRoofWeightKg * sectionLengthRatio
+                            return `${sectionRoofWeightKg.toFixed(2)} kg`
+                          })()}
                         </span>
                       </div>
                     </div>
