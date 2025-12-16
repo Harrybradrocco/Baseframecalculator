@@ -36,6 +36,9 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
     results,
   } = params
 
+  // Initial wait to ensure page is fully loaded
+  await new Promise(resolve => setTimeout(resolve, 500))
+
   const pdf = new jsPDF()
   const pageWidth = pdf.internal.pageSize.getWidth()
   const pageHeight = pdf.internal.pageSize.getHeight()
@@ -475,20 +478,35 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
 
   // 4. STRUCTURAL DIAGRAMS
   // Find and scroll to diagrams section to ensure they're rendered
-  const diagramsSection = document.querySelector('h2:contains("Structural Diagrams"), [class*="Structural"]') || 
-                          Array.from(document.querySelectorAll('h2')).find(el => el.textContent?.includes('Structural'))
-  if (diagramsSection) {
-    (diagramsSection as HTMLElement).scrollIntoView({ behavior: 'instant', block: 'start' })
-    await new Promise(resolve => setTimeout(resolve, 800))
-  } else {
-    // Fallback: scroll to any section with diagrams
-    const structureCard = document.querySelector('[id*="structure"], [class*="Structure"]') || 
-                          document.querySelector('svg[id*="structure"], svg[id*="frame"], svg[id*="corner"]')?.closest('div')
-    if (structureCard) {
-      (structureCard as HTMLElement).scrollIntoView({ behavior: 'instant', block: 'center' })
-      await new Promise(resolve => setTimeout(resolve, 800))
+  // First, try to find the Structural Diagrams heading
+  const allHeadings = Array.from(document.querySelectorAll('h2, h3'))
+  const diagramsHeading = allHeadings.find(el => 
+    el.textContent?.toLowerCase().includes('structural') || 
+    el.textContent?.toLowerCase().includes('diagram')
+  )
+  
+  if (diagramsHeading) {
+    (diagramsHeading as HTMLElement).scrollIntoView({ behavior: 'instant', block: 'start' })
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+  
+  // Also try to find and scroll to the actual SVG elements
+  const targetSvgIds = analysisType === "Simple Beam" 
+    ? ["beam-structure-diagram"]
+    : ["frame-structure-diagram", "corner-loads-diagram"]
+  
+  for (const svgId of targetSvgIds) {
+    const svg = document.getElementById(svgId) || 
+                document.querySelector(`svg#${svgId}`) ||
+                Array.from(document.querySelectorAll('svg')).find(s => s.id === svgId)
+    if (svg) {
+      (svg as HTMLElement).scrollIntoView({ behavior: 'instant', block: 'center' })
+      await new Promise(resolve => setTimeout(resolve, 500))
     }
   }
+  
+  // Final wait to ensure everything is rendered
+  await new Promise(resolve => setTimeout(resolve, 500))
   
   pdf.addPage()
   yOffset = 40
