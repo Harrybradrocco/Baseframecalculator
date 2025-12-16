@@ -5,7 +5,15 @@
  * and parse it into structured weight data.
  */
 
-import { createWorker, type Worker } from 'tesseract.js'
+// Dynamic import for tesseract.js to avoid SSR issues
+let tesseractModule: typeof import('tesseract.js') | null = null
+
+async function getTesseract() {
+  if (!tesseractModule) {
+    tesseractModule = await import('tesseract.js')
+  }
+  return tesseractModule
+}
 
 /**
  * Extract text from an image using OCR
@@ -14,8 +22,15 @@ export async function extractTextFromImage(
   imageFile: File,
   onProgress?: (progress: number) => void
 ): Promise<string> {
-  let worker: Worker | null = null
+  let worker: any = null
   try {
+    console.log('Loading tesseract.js module...')
+    if (onProgress) onProgress(1)
+    
+    // Dynamically import tesseract.js
+    const Tesseract = await getTesseract()
+    const { createWorker } = Tesseract
+    
     console.log('Starting OCR worker creation...')
     if (onProgress) onProgress(5)
     
