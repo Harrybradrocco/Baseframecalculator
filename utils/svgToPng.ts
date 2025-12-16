@@ -49,8 +49,10 @@ export async function svgToPngDataUrl(svg: SVGSVGElement, width: number, height:
         clearTimeout(timeout);
         try {
           const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
+          // Use 3x scaling for high-quality output
+          const scale = 3;
+          canvas.width = width * scale;
+          canvas.height = height * scale;
           const ctx = canvas.getContext('2d', { 
             willReadFrequently: false,
           });
@@ -61,8 +63,16 @@ export async function svgToPngDataUrl(svg: SVGSVGElement, width: number, height:
             return;
           }
           
+          // Enable high-quality rendering
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          
+          // Scale the context and draw the image
+          ctx.scale(scale, scale);
           ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/png');
+          
+          // Export at high quality
+          const dataUrl = canvas.toDataURL('image/png', 1.0);
           URL.revokeObjectURL(url);
           resolve(dataUrl);
         } catch (error) {

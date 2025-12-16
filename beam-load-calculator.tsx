@@ -258,6 +258,90 @@ export default function BeamLoadCalculator() {
   }
 
 
+  // Load state from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedState = localStorage.getItem("beamLoadCalculatorState")
+      if (savedState) {
+        const state = JSON.parse(savedState)
+        if (state.analysisType) setAnalysisType(state.analysisType)
+        if (state.beamLength) setBeamLength(state.beamLength)
+        if (state.frameLength) setFrameLength(state.frameLength)
+        if (state.frameWidth) setFrameWidth(state.frameWidth)
+        if (state.leftSupport !== undefined) setLeftSupport(state.leftSupport)
+        if (state.rightSupport !== undefined) setRightSupport(state.rightSupport)
+        if (state.loads) setLoads(state.loads)
+        if (state.sections) setSections(state.sections)
+        if (state.material) setMaterial(state.material)
+        if (state.customMaterial) setCustomMaterial(state.customMaterial)
+        if (state.width) setWidth(state.width)
+        if (state.height) setHeight(state.height)
+        if (state.flangeWidth) setFlangeWidth(state.flangeWidth)
+        if (state.flangeThickness) setFlangeThickness(state.flangeThickness)
+        if (state.webThickness) setWebThickness(state.webThickness)
+        if (state.diameter) setDiameter(state.diameter)
+        if (state.beamDensity) setBeamDensity(state.beamDensity)
+        if (state.beamCrossSection) setBeamCrossSection(state.beamCrossSection)
+        if (state.totalRoofWeight !== undefined) setTotalRoofWeight(state.totalRoofWeight)
+        if (state.totalRoofWeightUnit) setTotalRoofWeightUnit(state.totalRoofWeightUnit)
+      }
+    } catch (error) {
+      console.error("Failed to load state from localStorage:", error)
+    }
+  }, [])
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      const stateToSave = {
+        analysisType,
+        beamLength,
+        frameLength,
+        frameWidth,
+        leftSupport,
+        rightSupport,
+        loads,
+        sections,
+        material,
+        customMaterial,
+        width,
+        height,
+        flangeWidth,
+        flangeThickness,
+        webThickness,
+        diameter,
+        beamDensity,
+        beamCrossSection,
+        totalRoofWeight,
+        totalRoofWeightUnit,
+      }
+      localStorage.setItem("beamLoadCalculatorState", JSON.stringify(stateToSave))
+    } catch (error) {
+      console.error("Failed to save state to localStorage:", error)
+    }
+  }, [
+    analysisType,
+    beamLength,
+    frameLength,
+    frameWidth,
+    leftSupport,
+    rightSupport,
+    loads,
+    sections,
+    material,
+    customMaterial,
+    width,
+    height,
+    flangeWidth,
+    flangeThickness,
+    webThickness,
+    diameter,
+    beamDensity,
+    beamCrossSection,
+    totalRoofWeight,
+    totalRoofWeightUnit,
+  ])
+
   // Update section roof weights when total roof weight or frame length changes
   // Only update if sections exist and we're in Base Frame mode
   useEffect(() => {
