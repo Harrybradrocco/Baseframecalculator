@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Upload, FileText, AlertCircle, CheckCircle, Download } from "lucide-react"
+import { Upload, FileText, AlertCircle, CheckCircle, Download, Image as ImageIcon, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { Section, Load } from "../types"
 import {
@@ -26,6 +26,7 @@ import {
   createWeightImportTemplate,
   type WeightImportData,
 } from "../utils/weightImport"
+import { processImageWithOCR } from "../utils/ocr"
 
 interface WeightImportDialogProps {
   onImport: (sections: Section[], loads: Load[]) => void
@@ -44,22 +45,49 @@ export function WeightImportDialog({
 }: WeightImportDialogProps) {
   const [open, setOpen] = useState(false)
   const [importText, setImportText] = useState("")
-  const [importType, setImportType] = useState<"json" | "csv" | "table">("json")
+  const [importType, setImportType] = useState<"json" | "csv" | "table" | "ocr">("json")
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<{ sections: Section[]; loads: Load[] } | null>(null)
+  const [isProcessingOCR, setIsProcessingOCR] = useState(false)
+  const [ocrProgress, setOcrProgress] = useState(0)
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      setImportText(text)
+    // Check if it's an image file
+    if (file.type.startsWith('image/')) {
+      setIsProcessingOCR(true)
+      setOcrProgress(0)
       setError(null)
       setPreview(null)
+      
+      try {
+        // Process image with OCR
+        const extractedText = await processImageWithOCR(file, (progress) => {
+          setOcrProgress(progress)
+        })
+        setImportText(extractedText)
+        setImportType("table") // OCR results are treated as table format
+        setOcrProgress(100)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to process image with OCR")
+        setImportText("")
+      } finally {
+        setIsProcessingOCR(false)
+        setOcrProgress(0)
+      }
+    } else {
+      // Regular text file
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const text = e.target?.result as string
+        setImportText(text)
+        setError(null)
+        setPreview(null)
+      }
+      reader.readAsText(file)
     }
-    reader.readAsText(file)
   }
 
   const handleParse = () => {
@@ -71,8 +99,11 @@ export function WeightImportDialog({
         importData = parseWeightImportJSON(importText)
       } else if (importType === "csv") {
         importData = parseWeightImportCSV(importText)
-      } else {
+      } else if (importType === "table") {
         // Table format
+        importData = parseWeightImportTable(importText)
+      } else {
+        // OCR format (treated as table)
         importData = parseWeightImportTable(importText)
       }
 
@@ -140,7 +171,7 @@ export function WeightImportDialog({
         <DialogHeader>
           <DialogTitle>Import Weight Information</DialogTitle>
           <DialogDescription>
-            Import weight data from JSON, CSV, or table format to automatically populate sections and loads.
+            Import weight data from JSON, CSV, table format, or extract from images using OCR to automatically populate sections and loads.
           </DialogDescription>
         </DialogHeader>
 
@@ -184,6 +215,20 @@ export function WeightImportDialog({
             >
               Table
             </Button>
+            <Button
+              variant={importType === "ocr" ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setImportType("ocr")
+                setImportText("")
+                setPreview(null)
+                setError(null)
+              }}
+              className="flex items-center gap-1"
+            >
+              <ImageIcon className="w-4 h-4" />
+              OCR
+            </Button>
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate} className="ml-auto">
               <Download className="w-4 h-4 mr-2" />
               Download Template
@@ -192,16 +237,35 @@ export function WeightImportDialog({
 
           {/* File Upload */}
           <div>
-            <Label htmlFor="file-upload">Upload File:</Label>
+            <Label htmlFor="file-upload">Upload File or Image:</Label>
             <div className="mt-2">
               <input
                 id="file-upload"
                 type="file"
-                accept={importType === "json" ? ".json" : importType === "csv" ? ".csv" : ".csv,.txt"}
+                accept={
+                  importType === "json" 
+                    ? ".json" 
+                    : importType === "csv" 
+                    ? ".csv" 
+                    : importType === "ocr"
+                    ? "image/*"
+                    : ".csv,.txt,image/*"
+                }
                 onChange={handleFileUpload}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
+              {importType === "ocr" && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Upload a screenshot or image of the weight table. OCR will extract the text automatically.
+                </p>
+              )}
             </div>
+            {isProcessingOCR && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-blue-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Processing image with OCR... {ocrProgress > 0 ? `${ocrProgress}%` : ''}</span>
+              </div>
+            )}
           </div>
 
           {/* Text Input */}
@@ -220,8 +284,11 @@ export function WeightImportDialog({
                   ? "Paste JSON data here..."
                   : importType === "csv"
                   ? "Paste CSV data here..."
+                  : importType === "ocr"
+                  ? "Upload an image above to extract text using OCR, or paste OCR-extracted text here..."
                   : "Paste table data here...\n\nExample:\nSection No, Section Code, Function Code, Weight of function (kg), Weight of section (kg)\n1, Casing Length 1641 mm, , , 446\n1, , Casing, 199,\n1, , Fan, 47,"
               }
+              disabled={isProcessingOCR}
               className="mt-2 font-mono text-sm"
               rows={10}
             />

@@ -144,51 +144,76 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
   // Helper to capture a DOM node as PNG using svgToPngDataUrl
   const captureSVGAsImage = async (svgId: string, fallbackWidth: number, fallbackHeight: number) => {
     // Wait a bit for any pending renders
-    await new Promise(resolve => setTimeout(resolve, 300))
+    await new Promise(resolve => setTimeout(resolve, 500))
     
-    // Try to find the SVG element
+    // Try to find the SVG element - multiple strategies
     let svg = document.getElementById(svgId) as SVGSVGElement | null
     
-    // If not found by ID, try to find it in the DOM tree
+    // Strategy 1: Direct ID lookup
     if (!svg) {
-      // Search for SVG elements with the ID
+      svg = document.querySelector(`svg#${svgId}`) as SVGSVGElement | null
+    }
+    
+    // Strategy 2: Search all SVGs
+    if (!svg) {
       const allSvgs = document.querySelectorAll('svg')
       for (const s of allSvgs) {
-        if (s.id === svgId) {
-          svg = s
+        if (s.id === svgId || s.getAttribute('id') === svgId) {
+          svg = s as SVGSVGElement
+          break
+        }
+      }
+    }
+    
+    // Strategy 3: Find by partial ID match
+    if (!svg) {
+      const allSvgs = document.querySelectorAll('svg[id]')
+      for (const s of allSvgs) {
+        const id = s.getAttribute('id') || ''
+        if (id.includes(svgId.replace('-', '')) || svgId.includes(id.replace('-', ''))) {
+          svg = s as SVGSVGElement
           break
         }
       }
     }
     
     if (!svg) {
-      console.error(`SVG with id '${svgId}' not found in DOM`)
-      throw new Error(`SVG with id '${svgId}' not found in DOM. Make sure the chart is visible on the page before downloading the PDF.`)
+      console.error(`SVG with id '${svgId}' not found in DOM. Available SVGs:`, 
+        Array.from(document.querySelectorAll('svg[id]')).map(s => s.id))
+      throw new Error(`SVG with id '${svgId}' not found in DOM. Make sure the diagram is visible before generating PDF.`)
     }
     
-    // Ensure SVG is visible and has dimensions
-    const parent = svg.parentElement
-    if (parent) {
-      // Make sure parent is visible
-      parent.style.display = 'block'
-      parent.style.visibility = 'visible'
-      parent.style.opacity = '1'
+    // Ensure SVG and all parents are visible
+    let element: HTMLElement | null = svg
+    while (element) {
+      const style = window.getComputedStyle(element)
+      if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+        element.style.display = 'block'
+        element.style.visibility = 'visible'
+        element.style.opacity = '1'
+      }
+      element = element.parentElement
     }
     
     // Scroll into view and wait for render
     svg.scrollIntoView({ behavior: 'instant', block: 'center' })
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise(resolve => setTimeout(resolve, 1000))
     
-    // Force a reflow to ensure rendering
+    // Force multiple reflows to ensure rendering
     void svg.offsetHeight
-    
-    // Wait a bit more for any animations or renders
+    void svg.offsetWidth
+    await new Promise(resolve => setTimeout(resolve, 300))
+    void svg.getBoundingClientRect()
     await new Promise(resolve => setTimeout(resolve, 300))
     
     const rect = svg.getBoundingClientRect()
-    if (rect.width === 0 || rect.height === 0) {
-      console.warn(`SVG with id '${svgId}' has zero dimensions. Using fallback dimensions.`)
-    }
+    console.log(`SVG ${svgId} dimensions:`, { 
+      rect: { width: rect.width, height: rect.height },
+      attributes: { 
+        width: svg.getAttribute('width'), 
+        height: svg.getAttribute('height') 
+      }
+    })
     
     // Get dimensions from SVG attributes first, then from bounding rect
     let width = fallbackWidth
@@ -203,7 +228,7 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
       if (!isNaN(attrHeight) && attrHeight > 0) height = attrHeight
     }
     
-    // Use bounding rect if it has valid dimensions
+    // Use bounding rect if it has valid dimensions (prefer actual rendered size)
     if (rect.width > 0 && rect.height > 0) {
       width = rect.width
       height = rect.height
@@ -213,11 +238,14 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
     if (width <= 0) width = fallbackWidth
     if (height <= 0) height = fallbackHeight
     
+    console.log(`Capturing SVG ${svgId} at ${width}x${height}`)
+    
     try {
       const dataUrl = await svgToPngDataUrl(svg, width, height)
       if (!dataUrl || dataUrl.length === 0) {
         throw new Error("Empty data URL returned from SVG conversion")
       }
+      console.log(`Successfully captured SVG ${svgId}, data URL length: ${dataUrl.length}`)
       return dataUrl
     } catch (error) {
       console.error(`Failed to convert SVG ${svgId} to PNG:`, error)
@@ -446,9 +474,21 @@ export async function generatePDF(params: PDFGenerationParams): Promise<void> {
   }
 
   // 4. STRUCTURAL DIAGRAMS
-  // Scroll to top to ensure we can find diagrams
-  window.scrollTo(0, 0)
-  await new Promise(resolve => setTimeout(resolve, 300))
+  // Find and scroll to diagrams section to ensure they're rendered
+  const diagramsSection = document.querySelector('h2:contains("Structural Diagrams"), [class*="Structural"]') || 
+                          Array.from(document.querySelectorAll('h2')).find(el => el.textContent?.includes('Structural'))
+  if (diagramsSection) {
+    (diagramsSection as HTMLElement).scrollIntoView({ behavior: 'instant', block: 'start' })
+    await new Promise(resolve => setTimeout(resolve, 800))
+  } else {
+    // Fallback: scroll to any section with diagrams
+    const structureCard = document.querySelector('[id*="structure"], [class*="Structure"]') || 
+                          document.querySelector('svg[id*="structure"], svg[id*="frame"], svg[id*="corner"]')?.closest('div')
+    if (structureCard) {
+      (structureCard as HTMLElement).scrollIntoView({ behavior: 'instant', block: 'center' })
+      await new Promise(resolve => setTimeout(resolve, 800))
+    }
+  }
   
   pdf.addPage()
   yOffset = 40
